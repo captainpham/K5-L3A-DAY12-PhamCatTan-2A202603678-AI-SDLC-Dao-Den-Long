@@ -1,0 +1,37 @@
+{
+  "requirement": "Ticket-03: only 2/5 lit at dawn -> lost (dawn)",
+  "night": 1,
+  "seed": 1,
+  "ticks": 100,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "lanterns": [
+      {
+        "id": "L1",
+        "lit": true
+      },
+      {
+        "id": "L2",
+        "lit": true
+      }
+    ],
+    "time_left_s": 1
+  },
+  "expect": {
+    "events": [
+      "game_over"
+    ],
+    "end": {
+      "ticks": 60,
+      "state": "lost"
+    }
+  }
+}

@@ -4,10 +4,10 @@
 
 Game 3D góc nhìn thứ ba. Mây, người giữ đèn nhỏ tuổi, gom đom đóm để thắp lại Đèn Lồng Lớn trên **ba hòn đảo**
 (Đảo Bến, Đảo Cau, Đảo Chuông), né Bóng Mực và Gió Lạc trong sương đen.
-TypeScript + Three.js (bản web), logic game chạy headless bằng Node theo **Test Contract v1.1**.
+TypeScript + Three.js (bản web), logic game chạy headless bằng Node theo **Test Contract v1.2**.
 
 Đề bài: [docs/lab/](docs/lab/README.md) · Spec, giả định, acceptance criteria: [docs/notes/assumptions.md](docs/notes/assumptions.md) ·
-Bằng chứng: [phase-1](docs/proof/phase-1/README.md), [phase-2](docs/proof/phase-2/README.md) · Nhật ký AI: [docs/notes/ai-log.md](docs/notes/ai-log.md)
+Bằng chứng: [phase-1](docs/proof/phase-1/README.md), [phase-2](docs/proof/phase-2/README.md), [phase-3](docs/proof/phase-3/README.md) · Nhật ký AI: [docs/notes/ai-log.md](docs/notes/ai-log.md)
 
 ## Cài đặt và chạy (macOS / Linux / Windows, cần Node ≥ 18)
 
@@ -30,30 +30,31 @@ npm start         # 3. mở http://localhost:4173   (máy yếu: http://localhos
 | `Esc` / `P` | Tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu) |
 | `Enter` | Bấm nút đầu tiên trên màn hình menu |
 
-## Luật và cách tính điểm (số chuẩn Ticket-02)
+## Luật và cách tính điểm (Ticket-02 + Ticket-03)
 
-- Ba Đêm liên tiếp: 300 / 330 / 360 giây, có 5 / 6 / 7 đèn. Mây có **3 Ngọn Lửa** (hồi đầy mỗi Đêm), mang tối đa **10 đom đóm**, tự nhặt khi đi qua.
-- Mỗi đèn cần **10 đom đóm**, nạp được nhiều lần. Đèn đã sáng tạo vùng an toàn 6 m, Bóng Mực không vào được.
-- Bị Bóng Mực chạm: mất 1 lửa, rơi một nửa số đom đóm đang mang (nhặt lại được trong 8 giây), bất tử 1,5 giây.
-  Rơi khỏi đảo: mất 1 lửa và toàn bộ đom đóm, hồi sinh ở điểm xuất phát.
-- Gió Lạc (Đêm 2, 3) cướp 3 đom đóm khi bạn mang từ 5 con trở lên. Bùa Gió: chạy 7,2 m/s và lướt không hồi chiêu trong 10 giây.
-- Thắp hết đèn thì thắng. Hết lửa hoặc trời sáng thì thua (được chơi lại Đêm đó).
+- Ba Đêm liên tiếp: 240 / 270 / 300 giây, có 5 / 6 / 7 đèn. Mây có **3 Ngọn Lửa** (hồi đầy mỗi Đêm), tự nhặt đom đóm khi đi qua.
+  Sức chứa bắt đầu 10, **+2 sau mỗi lần thắp thành công**, tối đa 20.
+- Đèn cần **10 đom đóm** để thắp lần đầu, **5** để thắp lại. Đèn sáng có **100 dầu**, cháy 1 dầu/giây. Bấm `E` ở đèn đang sáng để **châm dầu** (mỗi đom đóm +10).
+- Đèn sáng có vùng an toàn 6 m. **Dầu dưới 30 thì mất vùng an toàn** và Bóng Mực sẽ tới **hút dầu** (5 dầu/giây). Hết dầu thì đèn tắt.
+- **Thắng lúc bình minh**: còn sống và còn ít nhất 3/5, 4/6, 5/7 đèn đang sáng. Thắp đủ đèn sớm không kết thúc Đêm.
+- Bị Bóng Mực chạm: mất 1 lửa, rơi một nửa đom đóm đang mang (nhặt lại được trong 8 giây). Rơi khỏi đảo: mất 1 lửa và toàn bộ đom đóm.
+- Gió Lạc (Đêm 2, 3) cướp 3 đom đóm khi bạn mang từ 5 con. Bùa Gió: chạy 7,2 m/s và lướt không hồi chiêu trong 10 giây.
 
 | Sự kiện | Điểm |
 |---|---|
-| Mỗi đom đóm **nạp** vào đèn | +10 |
-| Thắp 1 đèn | +100 |
-| Mỗi Bóng Mực trúng Tỏa Sáng (mỗi con, mỗi lần) | +5 |
-| Khi thắng Đêm: mỗi giây còn lại / mỗi lửa còn lại | +2 / +50 |
+| Mỗi đom đóm nạp vào đèn (thắp, thắp lại, châm dầu) | +5 |
+| Thắp lần đầu / thắp lại | +100 / +40 |
+| Bóng Mực trúng Tỏa Sáng (đang hút dầu) | +5 (+15) |
+| Bình minh (khi thắng): mỗi đèn đang sáng / mỗi lửa còn lại | +50 + floor(dầu) / +50 |
 
-Tổng điểm game là tổng điểm các Đêm đã thắng. Mọi con số nằm trong [game.contract.json](game.contract.json) và `STD` trong
-[src/sim/tuning.ts](src/sim/tuning.ts); bản đồ chuẩn trong [src/sim/maps.ts](src/sim/maps.ts).
+Tổng điểm game là tổng điểm các Đêm đã thắng. Số liệu: [game.contract.json](game.contract.json) (v1.2) và `STD` trong
+[src/sim/tuning.ts](src/sim/tuning.ts). Quyết định thiết kế: [ADR 0001](docs/adr/0001-lantern-fuel-and-dawn-win.md) · thay đổi phá vỡ: [CHANGELOG.md](CHANGELOG.md).
 
 ## Test và chế độ headless
 
 ```bash
-npm test                  # 92 test: luật chuẩn, 3 Đêm, CLI, bảng màu, 17 scenario headless
-npm run proof -- phase-2  # chạy các scenario 2 lần, lưu output thật vào docs/proof/phase-2/
+npm test                  # 114 test: luật chuẩn, dầu đèn, 3 Đêm, CLI, bảng màu, 21 scenario headless
+npm run proof -- phase-3  # chạy các scenario 2 lần, lưu output thật vào docs/proof/phase-3/
 node dist/headless.cjs --seed 1 --night 2 --ticks 600 --out out.jsonl \
   [--scenario scenario.json] [--inputs inputs.json] [--snapshot-every 10]
 ```
@@ -82,4 +83,6 @@ kiểm tra điều đó, và toàn bộ test vẫn đạt.
   (tắt trong headless nên không đổi Test Contract), và không mọc gần đèn, bục, bùa hay điểm sinh đom đóm.
 - **Động vật:** thỏ nhảy, sóc quanh gốc cây, hươu gặm cỏ. Chúng đi lang thang và **bỏ chạy khi Mây hoặc Bóng Mực tới gần**.
 - **Biển mây phản chiếu** (addon `Water` của three.js, màu chuẩn #12384A), trời sao và trăng.
+- **Suối và thác:** suối uốn lượn trên mặt đảo chảy ra mép đảo thành thác đổ xuống biển mây (chỉ là hình ảnh, Mây đi qua được).
+- **Núi non:** dãy núi tuyết xa ngoài biển mây dưới ánh trăng.
 - **Âm thanh tổng hợp bằng WebAudio**, không dùng file âm thanh.

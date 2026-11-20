@@ -58,6 +58,14 @@ export const STD = {
   windSpeed: 2,
   stepUp: 0.35, // max height the feet can step up/down without jumping/falling (ramps)
   towerTop: 14,
+  // Ticket-03 numbers that are not contract tuning keys
+  drainReach: 2, // a wander shade starts draining within 2 m (XZ) of its weak lantern
+  drainChase: 6, // a draining shade chases Mây inside 6 m
+  drainEventTicks: 60,
+  scoreRelight: 40,
+  scoreStunDraining: 15,
+  scoreDawnLantern: 50,
+  capacityPerLight: 2,
 } as const;
 
 export function nightDurationS(night: 1 | 2 | 3): number {

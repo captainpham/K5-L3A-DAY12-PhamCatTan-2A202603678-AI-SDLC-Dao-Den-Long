@@ -1,0 +1,45 @@
+{
+  "requirement": "Ticket-03: alive at dawn with >= 3/5 lit -> won dawn_survived, +50+floor(fuel) per lit lantern, +50 per flame",
+  "night": 1,
+  "seed": 1,
+  "ticks": 100,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "lanterns": [
+      {
+        "id": "L1",
+        "lit": true,
+        "fuel": 50
+      },
+      {
+        "id": "L2",
+        "lit": true,
+        "fuel": 50
+      },
+      {
+        "id": "L3",
+        "lit": true,
+        "fuel": 50
+      }
+    ],
+    "time_left_s": 1
+  },
+  "expect": {
+    "events": [
+      "game_over"
+    ],
+    "end": {
+      "ticks": 60,
+      "state": "won",
+      "score": 447
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "requirement": "Ticket-03: lit lantern burns 1/s, goes out at 0 (lantern_out), relight costs 5 (+40, relight:true)",
+  "night": 1,
+  "seed": 1,
+  "ticks": 90,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "carried": 5
+    },
+    "lanterns": [
+      {
+        "id": "L1",
+        "pos": [
+          0,
+          0,
+          1
+        ],
+        "lit": true,
+        "fuel": 1
+      }
+    ]
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 70,
+        "interact": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "lantern_out",
+      "deposit",
+      "lantern_lit"
+    ],
+    "end": {
+      "ticks": 90,
+      "state": "playing",
+      "score": 65
+    }
+  }
+}

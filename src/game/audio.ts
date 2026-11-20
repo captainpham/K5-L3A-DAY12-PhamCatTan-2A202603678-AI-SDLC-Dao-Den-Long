@@ -1,14 +1,18 @@
 // Procedural audio with WebAudio (no sound files -> nothing to license): night music pad + effects.
-export type Sfx = "pick" | "lit" | "pulse" | "hit" | "jump" | "dash" | "win" | "lose" | "shade" | "tick" | "wind" | "charm" | "steal";
+export type Sfx = "pick" | "lit" | "pulse" | "hit" | "jump" | "dash" | "win" | "lose" | "shade" | "tick" | "wind" | "charm" | "steal" | "out" | "refuel";
 
-export interface Settings { volume: number; sensitivity: number }
+export interface Settings { volume: number; sensitivity: number; colorblind: boolean }
 const KEY = "ddl-settings";
 
 export function loadSettings(): Settings {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    return { volume: typeof s.volume === "number" ? s.volume : 0.7, sensitivity: typeof s.sensitivity === "number" ? s.sensitivity : 1 };
-  } catch { return { volume: 0.7, sensitivity: 1 }; }
+    return {
+      volume: typeof s.volume === "number" ? s.volume : 0.7,
+      sensitivity: typeof s.sensitivity === "number" ? s.sensitivity : 1,
+      colorblind: s.colorblind === true,
+    };
+  } catch { return { volume: 0.7, sensitivity: 1, colorblind: false }; }
 }
 export function saveSettings(s: Settings): void {
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage may be blocked */ }
@@ -93,6 +97,8 @@ export class Audio {
       case "wind": this.noise(2.0, 0.2, 500); break;
       case "charm": this.tone(660, 0.3, "triangle", 0.15, 1320); break;
       case "steal": this.tone(700, 0.3, "sine", 0.12, 250); break;
+      case "out": this.tone(500, 0.7, "triangle", 0.15, 120); break;
+      case "refuel": this.tone(600, 0.2, "sine", 0.12, 900); break;
     }
   }
 }

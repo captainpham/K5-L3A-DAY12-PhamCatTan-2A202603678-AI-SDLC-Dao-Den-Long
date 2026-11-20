@@ -20,7 +20,8 @@ describe("tick model & movement", () => {
     const l = run({ ticks: 60, scenario: bare(), inputs: fwd });
     expect(snapAt(l, 60).player.pos[2]).toBeGreaterThan(6 - 0.6 * 0.1);
     expect(snapAt(l, 60).player.pos[2]).toBeLessThanOrEqual(6 + 1e-6);
-    expect(snapAt(l, 60).time_left_s).toBeCloseTo(299, 3);
+    // Ticket-03 [REPLACED] Night 1 lasts 240 s (was 300): read it from the contract
+    expect(snapAt(l, 60).time_left_s).toBeCloseTo(T.night1_duration_s - 1, 3);
   });
 
   it("rotates move by cam_yaw_deg and normalizes diagonals", () => {
@@ -109,16 +110,17 @@ describe("fireflies", () => {
 describe("lanterns", () => {
   const near = (extra: Record<string, unknown>) => bare({ lanterns: [{ id: "L1", pos: [0, 0, 2] }], ...extra });
 
-  it("costs 10, deposits min(carried, missing), remembers progress, +10 per mote, +100 when lit", () => {
+  // Ticket-03 [REPLACED] score: +5 per deposited mote (was +10); lantern_lit carries relight:false
+  it("costs 10, deposits min(carried, missing), remembers progress, +5 per mote, +100 when first lit", () => {
     const first = run({ ticks: 2, scenario: near({ player: { carried: 6 } }), inputs: press("interact") });
     expect(events(first, "deposit")[0].data).toEqual({ lantern_id: "L1", amount: 6, deposited: 6 });
     expect(events(first, "lantern_lit")).toHaveLength(0);
-    expect(end(first).score).toBe(60);
+    expect(end(first).score).toBe(30);
     // progress is remembered: 6 already deposited, carrying 6 -> deposits only the missing 4
     const second = run({ ticks: 2, scenario: near({ player: { carried: 6 }, lanterns: [{ id: "L1", pos: [0, 0, 2], deposited: 6 }] }), inputs: press("interact") });
     expect(events(second, "deposit")[0].data).toEqual({ lantern_id: "L1", amount: 4, deposited: 10 });
-    expect(events(second, "lantern_lit")[0]).toMatchObject({ tick: 1, data: { lantern_id: "L1" } });
-    expect(end(second).score).toBe(40 + 100);
+    expect(events(second, "lantern_lit")[0]).toMatchObject({ tick: 1, data: { lantern_id: "L1", relight: false } });
+    expect(end(second).score).toBe(4 * 5 + 100);
     expect(snapAt(run({ ticks: 10, scenario: near({ player: { carried: 6 }, lanterns: [{ id: "L1", pos: [0, 0, 2], deposited: 6 }] }), inputs: press("interact") }), 10).player.carried).toBe(2);
   });
 
@@ -129,15 +131,17 @@ describe("lanterns", () => {
     expect(events(tie, "deposit")[0].data.lantern_id).toBe("L1");
   });
 
-  it("lighting the last lantern wins with floor(seconds left) x 2 + 50 x flames", () => {
+  // Ticket-03 [REPLACED] "win as soon as all lanterns are lit" -> no early win (dawn win is tested in tests/fuel.test.ts)
+  it("lighting the last lantern no longer ends the night", () => {
     const sc = bare({
       player: { carried: 10 },
       lanterns: [{ id: "L1", pos: [0, 0, 1] }, { id: "L2", lit: true }, { id: "L3", lit: true }, { id: "L4", lit: true }, { id: "L5", lit: true }],
       time_left_s: 100,
     });
     const l = run({ ticks: 5, scenario: sc, inputs: press("interact") });
-    expect(events(l, "game_over")[0]).toMatchObject({ tick: 1, data: { result: "won", reason: "all_lit" } });
-    expect(end(l)).toEqual({ type: "end", ticks: 1, state: "won", score: 100 + 100 + 99 * 2 + 3 * 50 });
+    expect(events(l, "lantern_lit")).toHaveLength(1);
+    expect(events(l, "game_over")).toHaveLength(0);
+    expect(end(l)).toMatchObject({ ticks: 5, state: "playing" });
   });
 
   it("standard Night 1 map: L1..L5 at the ticket positions", () => {
@@ -277,7 +281,7 @@ describe("fall, dawn, pause", () => {
     expect(events(l, "resumed")[0].tick).toBe(31);
     expect(snapAt(l, 20)).toMatchObject({ state: "paused", sim_tick: 10 });
     expect(snapAt(l, 20).player.pos[2]).toBeCloseTo(1, 3);
-    expect(snapAt(l, 20).time_left_s).toBeCloseTo(300 - 10 / 60, 3);
+    expect(snapAt(l, 20).time_left_s).toBeCloseTo(T.night1_duration_s - 10 / 60, 3); // 240 s since Ticket-03
     expect(snapAt(l, 31)).toMatchObject({ state: "playing", sim_tick: 11 });
     expect(end(l)).toMatchObject({ ticks: 40 });
   });

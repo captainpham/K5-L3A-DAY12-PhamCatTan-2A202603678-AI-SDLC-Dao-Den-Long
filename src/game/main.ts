@@ -13,6 +13,11 @@ const audio = new Audio();
 const settings = loadSettings();
 audio.setVolume(settings.volume);
 controls.sensitivity = settings.sensitivity;
+function applyColorblind(): void {
+  view.colorblind = settings.colorblind;
+  document.body.classList.toggle("cb", settings.colorblind);
+}
+applyColorblind();
 
 const LINES: Record<1 | 2 | 3, string> = {
   1: "Mây à, sương đen đã nuốt Đảo Bến. Gom đom đóm, thắp lại năm ngọn đèn trước khi trời sáng nhé.",
@@ -104,11 +109,16 @@ function showSettings(back: Screen): void {
     <input id="s-vol" type="range" min="0" max="1" step="0.05" value="${settings.volume}" />
     <label>Độ nhạy chuột: <span id="v-sen">${settings.sensitivity.toFixed(2)}</span></label>
     <input id="s-sen" type="range" min="0.2" max="3" step="0.1" value="${settings.sensitivity}" />
+    <label><input id="s-cb" type="checkbox" ${settings.colorblind ? "checked" : ""} /> Bảng màu dễ phân biệt (mù màu)</label>
     <button id="b-back">Xong</button>`, { "b-back": () => (settingsBack === "pause" ? showPauseMenu() : showMenu()) });
   ($("s-vol") as HTMLInputElement).addEventListener("input", (e) => {
     settings.volume = Number((e.target as HTMLInputElement).value);
     $("v-vol").textContent = String(Math.round(settings.volume * 100));
     audio.setVolume(settings.volume); saveSettings(settings);
+  });
+  ($("s-cb") as HTMLInputElement).addEventListener("change", (e) => {
+    settings.colorblind = (e.target as HTMLInputElement).checked;
+    applyColorblind(); saveSettings(settings);
   });
   ($("s-sen") as HTMLInputElement).addEventListener("input", (e) => {
     settings.sensitivity = Number((e.target as HTMLInputElement).value);
@@ -128,7 +138,7 @@ function showResult(): void {
       <button id="b-next">Đêm ${night + 1}</button>`, { "b-next": () => showIntro((night + 1) as 2 | 3) });
   } else {
     audio.play("lose");
-    const why = game.endReason === "dawn" ? "Trời đã sáng trước khi thắp đủ đèn." : "Mây đã hết Ngọn Lửa.";
+    const why = game.endReason === "dawn" ? `Bình minh đến nhưng chỉ còn ${game.lanterns.filter((l) => l.lit).length}/${game.lanterns.length} đèn sáng (cần ${game.litNeeded}).` : "Mây đã hết Ngọn Lửa.";
     card(`<h1>Ánh sáng đã tắt…</h1><p>${why}</p><p>Tổng điểm các đêm đã thắng: <b>${total()}</b></p>
       <button id="b-retry">Chơi lại Đêm ${night}</button><button class="ghost" id="b-menu">Về menu</button>`,
     { "b-retry": () => showIntro(night), "b-menu": showMenu });
@@ -152,16 +162,24 @@ addEventListener("keydown", (e) => {
 
 // ------------------------------------------------------------------ HUD
 const bar = $("bar");
-for (let i = 0; i < 10; i++) bar.appendChild(document.createElement("i"));
+for (let i = 0; i < 20; i++) bar.appendChild(document.createElement("i"));
 function hud(): void {
   const p = game.player, t = game.t;
   $("flames").textContent = "🔥".repeat(p.flames) + "·".repeat(Math.max(0, t.flames - p.flames));
   const secs = Math.ceil(game.timeLeftS);
   $("clock").textContent = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
   $("clock").classList.toggle("danger", secs <= 30);
+  if (secs <= 30 && settings.colorblind) $("clock").textContent = `⚠ ${$("clock").textContent}`;
   const lit = game.lanterns.filter((l) => l.lit).length;
-  $("topright").innerHTML = `Đèn <b>${lit}/${game.lanterns.length}</b><br/>Điểm <b>${total() + game.score}</b>`;
-  bar.querySelectorAll("i").forEach((el, i) => el.classList.toggle("on", i < p.carried));
+  const enough = lit >= game.litNeeded;
+  $("topright").innerHTML = `Đèn <b>${lit}/${game.lanterns.length}</b> <span class="${enough ? "" : "need"}">${enough ? "✓" : (settings.colorblind ? "⚠ " : "") + "cần " + game.litNeeded}</span><br/>Điểm <b>${total() + game.score}</b>`;
+  // carried / capacity (capacity grows 10 -> 20 with successful lights)
+  const cap = game.capacity;
+  bar.querySelectorAll("i").forEach((el, i) => {
+    (el as HTMLElement).style.display = i < cap ? "block" : "none";
+    el.classList.toggle("on", i < p.carried);
+  });
+  bar.dataset.label = `${p.carried}/${cap}`;
   const cd = (id: string, ticks: number, full: number) => ($(id) as HTMLElement).style.setProperty("--p", `${(ticks / full) * 100}%`);
   cd("cd-dash", p.charmTicks > 0 ? 0 : p.dashCdTicks, 90);
   cd("cd-pulse", p.carried < t.pulse_cost ? 180 : p.pulseCdTicks, 180);
@@ -172,9 +190,14 @@ function hud(): void {
 
   // hint near an unlit lantern + arrow to the nearest unlit lantern when it is off-screen
   const unlit = game.lanterns.filter((l) => !l.lit);
-  const near = unlit.find((l) => Math.hypot(l.x - p.x, l.z - p.z) <= t.interact_radius && Math.abs(l.y - p.y) <= 1.5);
+  const near = game.lanterns.find((l) => Math.hypot(l.x - p.x, l.z - p.z) <= t.interact_radius && Math.abs(l.y - p.y) <= 1.5 && (!l.lit || l.fuelU < game.fuelMaxU));
   $("hint").style.display = near ? "block" : "none";
-  if (near) $("hint").textContent = `E — Nạp ánh sáng (${near.deposited}/${t.lantern_cost})`;
+  if (near) {
+    const cost = near.everLit ? t.relight_cost : t.lantern_cost;
+    $("hint").textContent = near.lit
+      ? `E — Châm dầu (${Math.floor(near.fuelU / 60)}/${t.fuel_max})`
+      : `E — ${near.everLit ? "Thắp lại" : "Nạp ánh sáng"} (${near.deposited}/${cost})`;
+  }
   const arrow = $("arrow");
   const target = unlit.sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
   if (target) {
@@ -212,6 +235,8 @@ function frame(now: number): void {
         if (n === "pulse") { view.pulse(); audio.play("pulse"); }
         else if (n === "mote_picked") audio.play("pick");
         else if (n === "lantern_lit") audio.play("lit");
+        else if (n === "lantern_out") audio.play("out");
+        else if (n === "refuel") audio.play("refuel");
         else if (n === "player_hit") audio.play("hit");
         else if (n === "dash") audio.play("dash");
         else if (n === "shade_spawned") audio.play("shade");

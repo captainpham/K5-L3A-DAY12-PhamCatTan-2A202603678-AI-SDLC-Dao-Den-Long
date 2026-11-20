@@ -1,9 +1,9 @@
 {
-  "requirement": "P1 regression: lighting the last lantern wins (all_lit) with time + flame bonus",
+  "requirement": "Ticket-03: interact on a lit, not full lantern refuels (used = ceil((100-fuel)/10)), +5 per mote",
   "night": 1,
   "seed": 1,
-  "ticks": 60,
-  "snapshot_every": 10,
+  "ticks": 10,
+  "snapshot_every": 1,
   "scenario": {
     "random_motes": false,
     "random_shades": false,
@@ -23,26 +23,11 @@
           0,
           0,
           1
-        ]
-      },
-      {
-        "id": "L2",
-        "lit": true
-      },
-      {
-        "id": "L3",
-        "lit": true
-      },
-      {
-        "id": "L4",
-        "lit": true
-      },
-      {
-        "id": "L5",
-        "lit": true
+        ],
+        "lit": true,
+        "fuel": 50.5
       }
-    ],
-    "time_left_s": 100
+    ]
   },
   "inputs": {
     "frames": [
@@ -54,14 +39,12 @@
   },
   "expect": {
     "events": [
-      "deposit",
-      "lantern_lit",
-      "game_over"
+      "refuel"
     ],
     "end": {
-      "ticks": 1,
-      "state": "won",
-      "score": 548
+      "ticks": 10,
+      "state": "playing",
+      "score": 25
     }
   }
 }

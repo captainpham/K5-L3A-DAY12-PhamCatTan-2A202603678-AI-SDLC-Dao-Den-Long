@@ -1,5 +1,5 @@
 export type GameState = "playing" | "paused" | "won" | "lost";
-export type ShadeState = "spawning" | "wander" | "chase" | "recoil" | "stunned";
+export type ShadeState = "spawning" | "wander" | "chase" | "recoil" | "stunned" | "drain";
 export type DrifterState = "idle" | "chase" | "flee" | "removed";
 
 /** One tick of player intent, exactly as the Test Contract describes it. */
@@ -41,7 +41,14 @@ export interface Player {
   fallWaitTicks: number;
 }
 
-export interface Lantern { id: string; x: number; y: number; z: number; lit: boolean; deposited: number }
+export interface Lantern {
+  id: string; x: number; y: number; z: number;
+  lit: boolean; deposited: number;
+  /** fuel in integer units of 1/60 (Ticket-03: avoid float error), 0..fuel_max*60 */
+  fuelU: number;
+  everLit: boolean;
+  relitCount: number;
+}
 
 export interface Shade {
   id: string;
@@ -52,6 +59,8 @@ export interface Shade {
   recoilX: number; recoilZ: number;
   wanderX: number; wanderZ: number; wanderTicks: number;
   expelTicks: number; expelLx: number; expelLz: number; // being pushed out of a freshly lit lantern
+  targetLanternId: string | null; // wander target / drained lantern (Ticket-03)
+  drainTicks: number; // ticks spent draining (fuel_drain event every 60)
 }
 
 export interface Mote {
@@ -77,7 +86,10 @@ export type GameEvent =
   | { name: "night_start"; data: { night: number } }
   | { name: "mote_picked"; data: { carried: number } }
   | { name: "deposit"; data: { lantern_id: string; amount: number; deposited: number } }
-  | { name: "lantern_lit"; data: { lantern_id: string } }
+  | { name: "lantern_lit"; data: { lantern_id: string; relight: boolean } }
+  | { name: "refuel"; data: { lantern_id: string; amount: number; fuel: number } }
+  | { name: "lantern_out"; data: { lantern_id: string } }
+  | { name: "fuel_drain"; data: { lantern_id: string; shade_id: string; fuel: number } }
   | { name: "pulse"; data: { stunned_ids: string[] } }
   | { name: "player_hit"; data: { by: "shade"; flames: number; dropped: number } | { by: "fall"; flames: number; dropped: number; lost: number } }
   | { name: "shade_spawned"; data: { id: string } }
@@ -87,7 +99,7 @@ export type GameEvent =
   | { name: "drifter_drop"; data: { drifter_id: string; amount: number } }
   | { name: "paused"; data: Record<string, never> }
   | { name: "resumed"; data: Record<string, never> }
-  | { name: "game_over"; data: { result: "won" | "lost"; reason: "all_lit" | "dawn" | "no_flames" } };
+  | { name: "game_over"; data: { result: "won" | "lost"; reason: "dawn_survived" | "dawn" | "no_flames" } };
 
 export interface TickEvent {
   tick: number;

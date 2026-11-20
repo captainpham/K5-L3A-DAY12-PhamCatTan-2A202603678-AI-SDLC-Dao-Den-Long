@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { bare, end, events, run, snapAt, snaps } from "./helpers";
 
 describe("Night 2 — Đảo Cau", () => {
-  it("6 lanterns at the standard positions, 330 s, charm C1 at (35,0,0)", () => {
+  // Ticket-03 [REPLACED] Night 2 lasts 270 s (was 330)
+  it("6 lanterns at the standard positions, 270 s, charm C1 at (35,0,0)", () => {
     const s = run({ ticks: 0, night: 2 })[0];
     expect(s.lanterns.map((l: any) => l.pos)).toEqual([[0, 0, 20], [17, 0, -10], [-17, 0, -10], [70, 0, 20], [87, 0, -10], [53, 0, -10]]);
-    expect(s.time_left_s).toBe(330);
+    expect(s.time_left_s).toBe(270);
     expect(s.charms).toEqual([{ id: "C1", available: true, respawn_s: 0 }]);
   });
 
@@ -80,10 +81,11 @@ function press0(btn: string) {
 }
 
 describe("Night 3 — Đảo Chuông", () => {
-  it("7 lanterns at the standard positions, 360 s, shades at 4.5 m/s", () => {
+  // Ticket-03 [REPLACED] Night 3 lasts 300 s (was 360)
+  it("7 lanterns at the standard positions, 300 s, shades at 4.5 m/s", () => {
     const s = run({ ticks: 0, night: 3 })[0];
     expect(s.lanterns.map((l: any) => l.pos)).toEqual([[0, 6, 6], [18, 3, 10], [-18, 3, 10], [35, 0, -10], [-35, 0, -10], [20, 0, -35], [-20, 0, -35]]);
-    expect(s.time_left_s).toBe(360);
+    expect(s.time_left_s).toBe(300);
     const l = run({ ticks: 60, night: 3, scenario: bare({ player: { pos: [0, 0, -30] }, shades: [{ id: "S1", pos: [10, 0, -30] }] }) });
     expect(snapAt(l, 60).shades[0].pos[0]).toBeCloseTo(5.5, 3);
   });

@@ -46,3 +46,14 @@ Cách tiết kiệm: đọc đề 1 lần rồi tóm tắt; lõi logic viết 1 
 
 Chưa kiểm chứng bằng mắt (AI không có trình duyệt): menu, HUD, âm thanh, FPS -> tôi chơi thử và chụp ảnh.
 Token Phase 2: cộng từ transcript khi gắn tag (xem cách tính ở Phase 1).
+
+## Phase 3 (Ticket-03, contract v1.2)
+
+| Bước | Việc AI làm | Lỗi AI và cách phát hiện |
+|---|---|---|
+| Git | Phát hiện Phase 2 chưa commit/tag trước khi sửa code Phase 3 -> hỏi tôi, commit + tag `phase-2` + push | AI tự thêm dòng `Co-Authored-By: Claude` vào commit dù tôi không muốn -> đã thêm quy tắc vào CLAUDE.md + memory; 2 commit cũ giữ nguyên (không được viết lại lịch sử sau tag) |
+| Thiết kế | ADR 0001: vòng trạng thái đèn, dầu bằng số nguyên 1/60, trạng thái `drain`, luật thắng lúc bình minh | — |
+| Test | 9 test cũ đỏ đúng chỗ luật bị [THAY THẾ] -> sửa kèm lý do `Ticket-03 [REPLACED]`, xoá 1 scenario có lý do | 3 test mới đỏ do test sai (đọc nhầm dòng event thay vì snapshot, chạy thiếu tick) -> sửa test, không sửa game |
+| Sáng tạo | Suối + thác, núi xa (chỉ hiển thị, không đổi bản đồ chuẩn) | — |
+
+Token Phase 3: cộng từ transcript khi gắn tag.

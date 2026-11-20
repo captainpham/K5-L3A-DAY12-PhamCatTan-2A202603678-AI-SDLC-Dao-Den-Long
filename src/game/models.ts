@@ -14,6 +14,9 @@ export const PALETTE = {
   danger: 0xff5a5f, uiText: 0xf5f1e6,
 };
 
+/** Ticket-03 colour-blind palette ("Bảng màu dễ phân biệt") */
+export const PALETTE_CB = { shadeRim: 0x00b3ff, danger: 0xffffff };
+
 const std = (color: number, extra: THREE.MeshStandardMaterialParameters = {}) =>
   new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true, ...extra });
 
@@ -42,8 +45,9 @@ export function makeMay(): { root: THREE.Group; lamp: THREE.PointLight } {
   return { root, lamp };
 }
 
-/** Big Lantern: stone base, wooden pole and a paper lamp: grey when off, warm orange with a light core when lit. */
-export function makeBigLantern(): { root: THREE.Group; lamp: THREE.Mesh; core: THREE.Mesh; light: THREE.PointLight } {
+/** Big Lantern: stone base, wooden pole and a paper lamp: grey when off, warm orange with a light core when lit.
+ *  Ticket-03: fuel bar above it; when off the lamp is squashed 20% and the paper shows a tear (no colour needed). */
+export function makeBigLantern(): { root: THREE.Group; lamp: THREE.Mesh; core: THREE.Mesh; light: THREE.PointLight; tear: THREE.Mesh; fuelBar: THREE.Mesh; fuelBg: THREE.Mesh } {
   const root = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 0.4, 8), std(0x4a4a5e));
   base.position.y = 0.2;
@@ -58,13 +62,22 @@ export function makeBigLantern(): { root: THREE.Group; lamp: THREE.Mesh; core: T
   cap.position.y = 4.5;
   const light = new THREE.PointLight(PALETTE.lanternLit, 0, 24, 1.4);
   light.position.y = 3.8;
+  // torn paper: a dark jagged gash on the lamp, visible only when the lantern is out
+  const tear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0x15121a }));
+  tear.position.set(0.32, 3.8, 0.32); tear.rotation.set(0.4, Math.PI / 4, 0.3);
+  // fuel bar (billboarded in view.ts)
+  const fuelBg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.18), new THREE.MeshBasicMaterial({ color: 0x0e1430, transparent: true, opacity: 0.7, depthWrite: false }));
+  fuelBg.position.y = 5.2;
+  const fuelBar = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.12).translate(0.75, 0, 0), new THREE.MeshBasicMaterial({ color: PALETTE.lanternLit, depthWrite: false }));
+  fuelBar.position.set(-0.75, 0, 0.01);
+  fuelBg.add(fuelBar);
   for (const m of [base, pole, cap]) m.castShadow = true;
-  root.add(base, pole, lamp, core, cap, light);
-  return { root, lamp, core, light };
+  root.add(base, pole, lamp, core, cap, light, tear, fuelBg);
+  return { root, lamp, core, light, tear, fuelBar, fuelBg };
 }
 
 /** Bóng Mực: a wobbling blob of ink with a violet rim and eyes. */
-export function makeShade(): { root: THREE.Group; body: THREE.Mesh; rim: THREE.Mesh } {
+export function makeShade(): { root: THREE.Group; body: THREE.Mesh; rim: THREE.Mesh; eyeMat: THREE.MeshBasicMaterial } {
   const root = new THREE.Group();
   const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.7, 1),
     new THREE.MeshStandardMaterial({ color: PALETTE.shadeBody, roughness: 0.6, flatShading: true }));
@@ -77,7 +90,7 @@ export function makeShade(): { root: THREE.Group; body: THREE.Mesh; rim: THREE.M
     body.add(eye);
   }
   root.add(rim, body);
-  return { root, body, rim };
+  return { root, body, rim, eyeMat };
 }
 
 /** Firefly: bright core + soft halo sprite. */

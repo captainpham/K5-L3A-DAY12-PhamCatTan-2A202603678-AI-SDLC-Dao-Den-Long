@@ -2,7 +2,8 @@
 import * as THREE from "three";
 import type { Game } from "../sim/game";
 import { STD } from "../sim/tuning";
-import { PALETTE, makeBigLantern, makeCharm, makeDrifter, makeMay, makeMote, makeShade } from "./models";
+import { PALETTE, PALETTE_CB, makeBigLantern, makeCharm, makeDrifter, makeMay, makeMote, makeShade } from "./models";
+import { Scenery } from "./decor/scenery";
 import { Environment } from "./decor/environment";
 import { Vegetation } from "./decor/vegetation";
 import { Fauna } from "./decor/fauna";
@@ -13,6 +14,9 @@ export class View {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 900);
   readonly quality: "high" | "low";
+  /** Ticket-03 colour-blind palette setting */
+  colorblind = false;
+  private scenery: Scenery | null = null;
   private hemi: THREE.HemisphereLight;
   private env: Environment;
   private may = makeMay();
@@ -96,6 +100,10 @@ export class View {
       ...map.shadeSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
       { x: map.start[0], z: map.start[2], r: 4 },
     ];
+    // creative: streams on the island + distant mountains in the cloud sea (render-only)
+    this.scenery = new Scenery(map, avoid);
+    this.world.add(this.scenery.group);
+    avoid.push(...this.scenery.streamSpots);
     this.vegetation = new Vegetation({ map, avoid, quality: this.quality });
     // creative extra: Mây cannot walk through trunks (trunk + body radius); never set in headless
     game.extraSolids = this.vegetation.trees.map((t) => ({ x: t.x, z: t.z, r: t.r + 0.35 }));
@@ -135,12 +143,24 @@ export class View {
     let lit = 0;
     game.lanterns.forEach((l, i) => {
       const v = this.lanterns[i];
-      const fill = l.lit ? 1 : l.deposited / game.t.lantern_cost;
+      const cost = l.everLit ? game.t.relight_cost : game.t.lantern_cost;
+      const fill = l.lit ? 1 : l.deposited / cost;
+      const fuel = l.fuelU / 60;
+      // fuel < 30: lamp and fuel bar blink slowly (1 Hz)
+      const low = l.lit && l.fuelU < game.lowFuelU;
+      const blinkOff = low && Math.floor(time * 2) % 2 === 1;
       const mat = v.lamp.material as THREE.MeshStandardMaterial;
       mat.color.setHex(l.lit ? PALETTE.lanternLit : PALETTE.lanternOff);
-      mat.emissiveIntensity = l.lit ? 1.6 + Math.sin(time * 3 + i) * 0.15 : fill * 0.8;
-      v.core.visible = l.lit;
-      v.light.intensity = l.lit ? 140 + Math.sin(time * 3 + i) * 8 : fill * 20;
+      mat.emissiveIntensity = l.lit ? (blinkOff ? 0.3 : 1.6 + Math.sin(time * 3 + i) * 0.15) : fill * 0.8;
+      v.core.visible = l.lit && !blinkOff;
+      v.light.intensity = l.lit ? (blinkOff ? 40 : 140) * (0.4 + 0.6 * Math.min(1, fuel / 50)) : fill * 20;
+      // out: squashed 20% + torn paper (distinguishable without colour)
+      v.lamp.scale.y = l.lit ? 1 : 0.8;
+      v.tear.visible = !l.lit;
+      v.fuelBg.visible = l.lit && !blinkOff;
+      v.fuelBar.scale.x = Math.max(0.001, fuel / game.t.fuel_max);
+      (v.fuelBar.material as THREE.MeshBasicMaterial).color.setHex(low ? (this.colorblind ? 0xffffff : PALETTE.danger) : PALETTE.lanternLit);
+      v.fuelBg.quaternion.copy(this.camera.quaternion);
       if (l.lit) lit++;
     });
     const k = lit / game.lanterns.length;
@@ -167,6 +187,10 @@ export class View {
       v.root.scale.setScalar(Math.max(0.05, grow) * (1 + Math.sin(time * 6 + s.z) * 0.06));
       (v.body.material as THREE.MeshStandardMaterial).color.setHex(stunned ? PALETTE.shadeStunned : PALETTE.shadeBody);
       v.rim.visible = !stunned;
+      const rimHex = this.colorblind ? PALETTE_CB.shadeRim : PALETTE.shadeRim;
+      (v.rim.material as THREE.MeshBasicMaterial).color.setHex(rimHex);
+      v.eyeMat.color.setHex(this.colorblind ? PALETTE_CB.shadeRim : 0xc9a7ff);
+      if (s.state === "drain") v.root.rotation.x = Math.sin(time * 10) * 0.1; // sucking wobble
     }
     for (const [id, v] of this.shades) if (!seen.has(id)) { this.scene.remove(v.root); this.shades.delete(id); }
 
@@ -222,6 +246,7 @@ export class View {
     }
 
     this.env.update(time);
+    this.scenery?.update(time);
     this.vegetation?.update(time);
     this.fauna?.update(dt, time, [{ x: p.x, z: p.z, w: 1 }, ...game.shades.map((s) => ({ x: s.x, z: s.z, w: 1.5 }))]);
 

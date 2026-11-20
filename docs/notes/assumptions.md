@@ -109,6 +109,34 @@ Chỉ hiển thị, không nằm trong bundle headless (có test).
 Cây **chặn Mây ở bản chơi** qua `Game.extraSolids` (thân cây + 0.35 m). Headless không bao giờ đặt danh sách này nên output contract không đổi (có test).
 Cây được đặt cách xa đèn, bục, bùa, điểm xuất phát và mọi điểm sinh đom đóm/Bóng Mực để không chặn luật chơi. Bóng Mực là sương mực nên bay xuyên cây.
 
+## Phase 3
+
+Ticket-03 "Đèn cạn dầu", Test Contract **v1.2**. Quyết định thiết kế: [ADR 0001](../adr/0001-lantern-fuel-and-dawn-win.md). Breaking changes: [CHANGELOG.md](../../CHANGELOG.md).
+
+### Acceptance criteria
+
+| Mục | Tiêu chí nghiệm thu | Kiểm chứng |
+|---|---|---|
+| Nhiên liệu | Thắp (lần đầu/lại) -> fuel 100; hao 1/s; fuel ≤ 0 -> `lantern_out`, deposited 0, ever_lit giữ true | `tests/fuel.test.ts`, p3-01 |
+| Thắp lại | Đèn ever_lit cần 5, +40, `relight: true`, relit_count++ | test, p3-01 |
+| Châm dầu | used = min(mang, ceil((100−fuel)/10)), fuel += 10×used ≤ 100, +5/đom đóm, `refuel`; mang 0 -> không gì | test, p3-02 |
+| Vùng an toàn | fuel < 30 mất vùng; đúng 30 còn vùng; châm lên ≥ 30 đẩy Bóng Mực ra trong ≤ 30 tick, không sát thương | test |
+| Hút dầu | wander -> đèn yếu gần nhất (id nhỏ hơn khi bằng nhau), ≤ 2 m -> `drain`, 5/s cộng dồn, `fuel_drain` mỗi 60 tick; drain -> chase (Mây ≤ 6 m), stunned (pulse, +15), wander (đèn tắt / fuel ≥ 30 / > 2 m) | test, p3-03 |
+| Thắng | Hết giờ, còn sống, đèn sáng ≥ ceil(0.6n) -> `dawn_survived` (+50+floor(fuel)/đèn, +50/lửa); thiếu -> `dawn`; hết lửa luôn `no_flames`; không thắng sớm | test, p3-04, p3-05 |
+| Sức chứa | 10 + 2 × successful_lights ≤ 20, đặt lại mỗi Đêm, đèn đặt sẵn không tính | test |
+| Hiển thị | Thanh dầu, nhấp nháy 1 Hz khi < 30; HUD mang/sức chứa; chế độ mù màu (#00B3FF, cảnh báo trắng + ⚠, đèn tắt xẹp 20% + vết rách) | Chơi thử, ảnh chụp |
+
+### Giả định Phase 3
+
+| Chỗ chưa rõ | Giả định |
+|---|---|
+| "đi về đèn tắt gần nhất như trước" | Ticket-02 không định nghĩa; nay `wander` đi tới đèn tắt gần nhất (tốc độ Bóng Mực) và lượn chờ trong 2 m; không có đèn nào thì đi lang thang như Phase 2 |
+| Tốc độ khi `wander` tới đèn | Bằng tốc độ Bóng Mực (4.0 / Đêm 3: 4.5 m/s) |
+| `fuel_drain.fuel` | Fuel ngay sau phần hút của con đó trong tick, làm tròn 1 chữ số |
+| Đèn đặt `lit: true` bằng scenario | `ever_lit` mặc định true; không tính vào successful_lights |
+| Đèn "đầy" | fuel = 100 đúng; vì hao ở bước 2 trước tương tác nên trên thực tế đèn chỉ đầy trong tick vừa thắp/châm |
+| Drain bị chặn bởi vùng an toàn đèn khác | Vẫn áp dụng: đèn có fuel ≥ 30 vẫn chặn ở mép 6 m |
+
 ### Điều khiển -> input contract
 
 Camera nhìn theo hướng `(sin yaw, cos yaw)`. Với công thức xoay của contract, `W` = `z +1`, `S` = `z -1`, `A` = `x +1`, `D` = `x -1` (bên phải màn hình là `x -1`).

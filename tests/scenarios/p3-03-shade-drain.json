@@ -1,0 +1,56 @@
+{
+  "requirement": "Ticket-03: fuel < 30 -> no safe zone; wander shade goes to it, drains 5/s (fuel_drain every 60 ticks) until it goes out",
+  "night": 1,
+  "seed": 1,
+  "ticks": 400,
+  "snapshot_every": 20,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          0,
+          0,
+          12
+        ]
+      }
+    ],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "pos": [
+        0,
+        0,
+        -30
+      ]
+    },
+    "lanterns": [
+      {
+        "id": "L1",
+        "pos": [
+          0,
+          0,
+          20
+        ],
+        "lit": true,
+        "fuel": 25
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "fuel_drain",
+      "fuel_drain",
+      "lantern_out"
+    ],
+    "end": {
+      "ticks": 400,
+      "state": "playing"
+    }
+  }
+}

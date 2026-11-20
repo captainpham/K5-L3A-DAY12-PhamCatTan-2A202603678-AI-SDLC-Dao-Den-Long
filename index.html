@@ -17,8 +17,12 @@
     @keyframes blink { 50% { opacity: .35; } }
     #topright { top: 12px; right: 16px; text-align: right; font-size: 18px; line-height: 1.5; }
     #topright b { color: var(--gold); }
-    #bar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
-    #bar i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ffe58a55; background: #0005; display: block; }
+    #bar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+    #bar::after { content: attr(data-label); margin-left: 8px; font-weight: 700; color: var(--mote); }
+    .need { color: var(--danger); font-size: 14px; }
+    /* Ticket-03 colour-blind palette: UI danger becomes white (with a ⚠ icon added in the text) */
+    body.cb { --danger: #ffffff; }
+    #bar i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ffe58a55; background: #0005; display: block; }
     #bar i.on { background: radial-gradient(circle, #fff6c2 0 35%, var(--mote) 60%, #ffe58a00 75%); border-color: var(--mote); }
     #cds { bottom: 16px; right: 18px; display: flex; gap: 12px; }
     .cd { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;

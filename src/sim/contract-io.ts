@@ -1,5 +1,5 @@
 // Test Contract v1.1 I/O: scenario + inputs parsing (strict) and JSONL serialization.
-import { Game, byId, idNum } from "./game";
+import { Game, byId, fuel1, idNum } from "./game";
 import { STD } from "./tuning";
 import { NEUTRAL_INPUT, type InputState, type ShadeState, type DrifterState } from "./types";
 
@@ -28,7 +28,7 @@ function optBool(o: Record<string, unknown>, key: string, where: string): boolea
   return o[key] as boolean;
 }
 
-const SHADE_STATES: ShadeState[] = ["spawning", "wander", "chase", "recoil", "stunned"];
+const SHADE_STATES: ShadeState[] = ["spawning", "wander", "chase", "recoil", "stunned", "drain"];
 const DRIFTER_STATES: DrifterState[] = ["idle", "chase", "flee"];
 
 // ------------------------------------------------------------------ scenario
@@ -51,6 +51,7 @@ export function applyScenario(game: Game, raw: unknown): void {
     const dcd = optInt(pl, "dash_cd_ticks", "scenario.player"); if (dcd !== undefined) p.dashCdTicks = dcd;
     const pcd = optInt(pl, "pulse_cd_ticks", "scenario.player"); if (pcd !== undefined) p.pulseCdTicks = pcd;
     const ch = optInt(pl, "charm_ticks", "scenario.player"); if (ch !== undefined) p.charmTicks = ch;
+    const sl = optInt(pl, "successful_lights", "scenario.player"); if (sl !== undefined) game.successfulLights = sl;
   }
 
   const rm = optBool(sc, "random_motes", "scenario"); if (rm !== undefined) game.randomMotes = rm;
@@ -97,6 +98,10 @@ export function applyScenario(game: Game, raw: unknown): void {
       const left = optInt(o, "state_ticks_left", `scenario.shades[${i}]`);
       const def = state === "stunned" ? 120 : state === "recoil" ? STD.recoilTicks : state === "spawning" ? STD.shadeSpawningTicks : 0;
       const sh = game.newShade(id, x, z, state, left ?? def);
+      if (o.target_lantern_id !== undefined) {
+        if (typeof o.target_lantern_id !== "string") fail(`scenario.shades[${i}].target_lantern_id: string`);
+        sh.targetLanternId = o.target_lantern_id;
+      }
       // a listed y is taken as the shade centre when it is above ground level
       const g = game.map.ground(x, z);
       if (g === null) sh.y = y > 0 ? y : STD.shadeCenterY;
@@ -152,6 +157,16 @@ export function applyScenario(game: Game, raw: unknown): void {
       if (l.pos !== undefined) { const [x, y, z] = vec3(l.pos, `scenario.lanterns[${i}].pos`); lan.x = x; lan.y = y; lan.z = z; }
       const dep = optInt(l, "deposited", `scenario.lanterns[${i}]`); if (dep !== undefined) lan.deposited = dep;
       const lit = optBool(l, "lit", `scenario.lanterns[${i}]`); if (lit !== undefined) lan.lit = lit;
+      const ever = optBool(l, "ever_lit", `scenario.lanterns[${i}]`);
+      if (l.fuel !== undefined && (!isNum(l.fuel) || l.fuel < 0)) fail(`scenario.lanterns[${i}].fuel: non-negative number`);
+      if (lan.lit) {
+        // lit without fuel -> 100 (Ticket-03); fuel stored in integer 1/60 units
+        lan.fuelU = Math.min(game.fuelMaxU, Math.round(((l.fuel as number | undefined) ?? game.t.fuel_max) * 60));
+        lan.everLit = ever ?? true;
+      } else {
+        lan.fuelU = 0;
+        if (ever !== undefined) lan.everLit = ever;
+      }
     });
   }
 
@@ -225,11 +240,15 @@ export function snapshot(game: Game): Record<string, unknown> {
       invuln: p.invulnTicks > 0,
       flames: p.flames,
       carried: p.carried,
+      capacity: game.capacity,
       dash_cd_s: sec(p.dashCdTicks),
       pulse_cd_s: sec(p.pulseCdTicks),
       charm_s: sec(p.charmTicks),
     },
-    lanterns: game.lanterns.map((l) => ({ id: l.id, pos: [r3(l.x), r3(l.y), r3(l.z)], lit: l.lit, deposited: l.deposited })),
+    lanterns: game.lanterns.map((l) => ({
+      id: l.id, pos: [r3(l.x), r3(l.y), r3(l.z)], lit: l.lit, deposited: l.deposited,
+      fuel: l.lit ? fuel1(l.fuelU) : 0, ever_lit: l.everLit, relit_count: l.relitCount,
+    })),
     shades: game.shades.map((s) => ({ id: s.id, pos: [r3(s.x), r3(s.y), r3(s.z)], state: s.state })),
     motes_active: game.motes.length,
     motes: game.motes.map((m) => ({ id: m.id, pos: [r3(m.x), r3(m.y), r3(m.z)], kind: m.kind, ttl_s: m.ttl === null ? null : sec(m.ttl) })),
