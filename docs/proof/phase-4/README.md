@@ -26,5 +26,5 @@ Máy đo: Windows 11, AMD Ryzen 9 5900HS + Radeon Graphics (iGPU), 15 GB RAM, No
 | 6. Contract v1.3: `contract_version`, `bench_cmd`, `soak_cmd`; v1.0–v1.2 giữ nguyên | `tests/cli.test.ts`, `tests/release.test.ts`; 21 scenario headless chạy 2 lần | `RESULTS.md` | ĐẠT |
 | 7. Retro 1–2 trang | `docs/notes/retro.md` | file | ĐẠT |
 | 7. Công cụ quay video: nút quay màn hình trong game, tự dừng 4:55, xuất `.mp4` | test logic (`recorder`) + quay thật 4,4 s trong Chrome, file có đầu `ftyp` hợp lệ | `record-button.png` | ĐẠT |
-| 7. Video demo `.mp4` < 5 phút | đính kèm Release v1.0.0, link ở đầu README | `game.mp4` (147 MB, tải được khi chưa đăng nhập) | ĐẠT về đính kèm và link; **thời lượng chưa kiểm bằng công cụ** |
+| 7. Video demo `.mp4` < 5 phút | đính kèm Release v1.0.0, link ở đầu README | `game.mp4` (147 MB, tải được khi chưa đăng nhập) | ĐẠT: đo bằng bộ giải mã của Chrome, thời lượng **295,0 s = 4:55** (< 5 phút), 1920×950; dừng đúng mốc tự dừng của nút quay |
 | Regression Phase 1–3 | 141 test + `p1-*`, `p2-*`, `p3-*` | `RESULTS.md` | ĐẠT |
