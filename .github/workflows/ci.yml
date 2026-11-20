@@ -1,0 +1,23 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm run build # = build_cmd in game.contract.json
+      - run: npm run typecheck
+      - run: npm test
+      - name: Contract smoke test (headless_cmd)
+        run: |
+          node dist/headless.cjs --seed 1 --night 1 --ticks 600 --out a.jsonl
+          node dist/headless.cjs --seed 1 --night 1 --ticks 600 --out b.jsonl
+          cmp a.jsonl b.jsonl
+          tail -n 1 a.jsonl

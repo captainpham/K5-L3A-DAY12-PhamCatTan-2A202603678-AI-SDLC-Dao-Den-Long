@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Đảo Đèn Lồng</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1030; color: #f5f1e6;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    #app { position: fixed; inset: 0; }
+    #hud { position: fixed; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px;
+      pointer-events: none; font-size: 15px; }
+    .pill { background: rgba(11,16,40,.72); border: 1px solid #2a3360; border-radius: 999px; padding: 5px 12px; }
+    .pill b { color: #ffb347; }
+    #hint { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: rgba(11,16,40,.8);
+      border: 1px solid #ffb347; border-radius: 10px; padding: 6px 14px; display: none; }
+    #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,12,30,.62); }
+    #overlay .card { max-width: 460px; margin: 16px; background: #151c3d; border: 1px solid #2a3360; border-radius: 14px;
+      padding: 22px 26px; text-align: center; }
+    #overlay h1 { margin: 0 0 6px; color: #ffb347; }
+    #overlay p { margin: 6px 0; color: #aeb3cc; line-height: 1.55; }
+    #overlay kbd { background: #1b2350; border: 1px solid #2a3360; border-radius: 4px; padding: 0 6px; color: #ffe9b0; }
+    #overlay button { margin-top: 12px; background: #ffb347; color: #1a1206; border: 0; border-radius: 10px;
+      padding: 10px 20px; font-weight: 700; font-size: 15px; cursor: pointer; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="hud"></div>
+  <div id="hint"></div>
+  <div id="overlay">
+    <div class="card">
+      <h1 id="ov-title">Đảo Đèn Lồng</h1>
+      <p id="ov-text">Đêm 1 – Đảo Bến. Sương đen đã nuốt ánh sáng của đảo. Giúp Mây gom đom đóm và thắp lại 5 Đèn Lồng Lớn.</p>
+      <p><kbd>W A S D</kbd> di chuyển · <kbd>Space</kbd> nhảy · <kbd>E</kbd> nạp đèn · <kbd>F</kbd> tỏa sáng<br />
+        Kéo chuột hoặc <kbd>←</kbd> <kbd>→</kbd> xoay camera · <kbd>R</kbd> chơi lại</p>
+      <button id="ov-btn">Bắt đầu</button>
+    </div>
+  </div>
+  <script type="module" src="/src/game/main.ts"></script>
+</body>
+</html>

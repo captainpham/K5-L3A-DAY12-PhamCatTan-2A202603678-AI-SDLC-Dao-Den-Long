@@ -1,0 +1,5 @@
+{
+  "requirement": "Default Night 1 with random fireflies + shades, idle player, seed 42 (determinism over a long run)",
+  "seed": 42, "ticks": 18000, "snapshot_every": 600,
+  "expect": { "events": ["shade_spawned", "player_hit", "game_over"], "end": { "state": "lost" } }
+}

@@ -1,0 +1,6 @@
+{
+  "requirement": "R5 shades chase + hit costs flames + R7 lose (no_flames)",
+  "seed": 1, "ticks": 1200, "snapshot_every": 30,
+  "scenario": { "random_motes": false, "random_shades": false, "player": { "carried": 4 }, "motes": [], "shades": [{ "id": "S1", "pos": [8, 0, 0] }] },
+  "expect": { "events": ["player_hit", "player_hit", "player_hit", "game_over"], "end": { "state": "lost" } }
+}

@@ -1,0 +1,8 @@
+{
+  "requirement": "R6 pulse stuns + pushes shades within pulse_radius, costs light, cooldown",
+  "seed": 1, "ticks": 300, "snapshot_every": 10,
+  "scenario": { "random_motes": false, "random_shades": false, "player": { "carried": 3 }, "motes": [],
+    "shades": [{ "id": "S1", "pos": [5, 0, 0] }, { "id": "S2", "pos": [-20, 0, 0] }] },
+  "inputs": { "frames": [ { "tick": 0, "pulse": true }, { "tick": 1, "pulse": false }, { "tick": 30, "pulse": true } ] },
+  "expect": { "events": ["pulse"], "end": { "ticks": 300, "state": "playing" } }
+}
