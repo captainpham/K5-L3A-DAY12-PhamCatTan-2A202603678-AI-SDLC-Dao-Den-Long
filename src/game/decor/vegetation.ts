@@ -31,14 +31,20 @@ export interface VegetationOptions {
   /** places where nothing big should grow (lanterns, pads, charms, start, ramps) */
   avoid: Spot[];
   quality: "high" | "low";
+  /** visual landscape (hills, lake, river): plants follow its height and keep off the water */
+  land?: { height(x: number, z: number): number; isWater(x: number, z: number): boolean; sandiness(x: number, z: number): number;
+    hills: { x: number; z: number; r: number }[] };
 }
 
 export class Vegetation {
   readonly trees: Spot[] = [];
+  /** rocks big enough to block Mây in the windowed game */
+  readonly rocks: Spot[] = [];
   readonly group = new THREE.Group();
 
   constructor(opts: VegetationOptions) {
-    const { map, avoid } = opts;
+    const { map, avoid, land } = opts;
+    const lift = (x: number, z: number) => (land ? land.height(x, z) : 0);
     const rng = makeRng(2024 + map.night);
     const b = map.bounds;
     const area = (b.maxX - b.minX) * (b.maxZ - b.minZ);
@@ -46,15 +52,29 @@ export class Vegetation {
       const g = map.ground(x, z);
       if (g === null || map.solid(x, z, g)) return null;
       // keep off cliff edges and ramps: neighbours must be the same height
-      for (const [dx, dz] of [[edge, 0], [-edge, 0], [0, edge], [0, -edge]]) if (map.ground(x + dx, z + dz) !== g) return null;
-      if (map.night === 2 && x > 26 && x < 44 && Math.abs(z) <= 2.5) return null; // bridge
+      // keep off cliffs (tiers, ramps): a neighbour may differ only by a walkable slope (mountains are fine)
+      for (const [dx, dz] of [[edge, 0], [-edge, 0], [0, edge], [0, -edge]]) {
+        const n = map.ground(x + dx, z + dz);
+        if (n === null || Math.abs(n - g) > edge * 2.5) return null;
+      }
+      if (g > 24) return null; // snow caps
+      const S = map.scale ?? 1;
+      if (map.night === 2 && x > 26 * S && x < 44 * S && Math.abs(z) <= 2.5 * S) return null; // bridge
+      if (land?.isWater(x, z)) return null;
       return g;
     };
-    const sample = (edge = 0.5): [number, number, number] | null => {
+    /** random dry spot; y includes the visual hill height */
+    const sample = (edge = 0.5, nearHill = false): [number, number, number] | null => {
       for (let i = 0; i < 30; i++) {
-        const x = b.minX + rng() * (b.maxX - b.minX), z = b.minZ + rng() * (b.maxZ - b.minZ);
+        let x = b.minX + rng() * (b.maxX - b.minX), z = b.minZ + rng() * (b.maxZ - b.minZ);
+        const pool = [...(land ? land.hills : []), ...(map.mountains ?? [])]; // dunes + real mountains
+        if (nearHill && pool.length) {
+          const h = pool[Math.floor(rng() * pool.length)];
+          const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * h.r * 0.9;
+          x = h.x + Math.cos(a) * d; z = h.z + Math.sin(a) * d;
+        }
         const g = onLand(x, z, edge);
-        if (g !== null) return [x, g, z];
+        if (g !== null) return [x, g + lift(x, z), z];
       }
       return null;
     };
@@ -72,7 +92,8 @@ export class Vegetation {
     // a little green self-glow keeps the blades green at night instead of turning brown under the warm lantern light
     const grassMat = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide, emissive: PALETTE.grass, emissiveIntensity: 0.45 });
     addWind(grassMat, 0.18, "uv");
-    const GRASS = Math.round(area * 2.2 * k);
+    // denser than before (more grass, flowers, trees); capped so big explore maps keep >= 30 FPS
+    const GRASS = Math.min(Math.round(area * 3.2 * k), Math.round(70000 * k));
     const grass = new THREE.InstancedMesh(blade, grassMat, GRASS);
     const base = new THREE.Color(PALETTE.grass);
     const hsl = { h: 0, s: 0, l: 0 };
@@ -81,16 +102,19 @@ export class Vegetation {
     for (let i = 0; i < GRASS; i++) {
       const pt = sample(0.2);
       if (!pt) continue;
+      // sandy hill tops: sparse, shorter, drier tufts
+      const sandy = land ? land.sandiness(pt[0], pt[2]) : 0;
+      if (rng() < sandy * 0.8) continue;
       q.setFromAxisAngle(up, rng() * Math.PI);
-      m.compose(p.set(pt[0], pt[1], pt[2]), q, s.set(1, 0.6 + rng() * 0.9, 1));
+      m.compose(p.set(pt[0], pt[1], pt[2]), q, s.set(1, (0.6 + rng() * 0.9) * (1 - sandy * 0.4), 1));
       grass.setMatrixAt(n, m);
-      grass.setColorAt(n++, col.setHSL(hsl.h + (rng() - 0.5) * 0.04, hsl.s, hsl.l * (0.75 + rng() * 0.5)));
+      grass.setColorAt(n++, col.setHSL(hsl.h - sandy * 0.12 + (rng() - 0.5) * 0.04, hsl.s * (1 - sandy * 0.3), hsl.l * (0.75 + rng() * 0.5 + sandy * 0.3)));
     }
     grass.count = n;
     this.group.add(grass);
 
     // ---- flowers in small patches, softly glowing
-    const FLOWERS = Math.round(area * 0.07 * k);
+    const FLOWERS = Math.min(Math.round(area * 0.14 * k), Math.round(6000 * k));
     const stem = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 0.45, 3).translate(0, 0.225, 0), new THREE.MeshLambertMaterial({ color: 0x2f5a35 }), FLOWERS);
     const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.25, flatShading: true });
     addWind(headMat, 0.05, "y");
@@ -98,12 +122,13 @@ export class Vegetation {
     const palette = [0xfff4e0, 0xffb7d5, 0xffe27a, 0xc9b2ff, 0xffa36b];
     n = 0;
     for (let i = 0; i < FLOWERS; i++) {
-      const pt = sample();
+      const pt = sample(0.5, rng() < 0.4); // 40% of the patches grow on the hills
       if (!pt) continue;
       for (let j = 0; j < 3 && n < FLOWERS; j++, i++) {
         const x = pt[0] + (rng() - 0.5) * 1.5, z = pt[2] + (rng() - 0.5) * 1.5;
-        if (onLand(x, z, 0.2) !== pt[1]) continue;
-        m.compose(p.set(x, pt[1], z), q.identity(), s.set(1, 0.7 + rng() * 0.6, 1));
+        const g = onLand(x, z, 0.2);
+        if (g === null) continue;
+        m.compose(p.set(x, g + lift(x, z), z), q.identity(), s.set(1, 0.7 + rng() * 0.6, 1));
         stem.setMatrixAt(n, m); head.setMatrixAt(n, m);
         head.setColorAt(n++, col.setHex(palette[Math.floor(rng() * palette.length)]));
       }
@@ -112,7 +137,7 @@ export class Vegetation {
     this.group.add(stem, head);
 
     // ---- trees (pines + round), away from gameplay spots
-    const TREES = Math.round(area * 0.012);
+    const TREES = Math.min(Math.round(area * 0.017), 500);
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.28, 2, 6).translate(0, 1, 0), new THREE.MeshStandardMaterial({ color: PALETTE.wood, flatShading: true }), TREES);
     const pineMat = new THREE.MeshStandardMaterial({ color: 0x23472f, flatShading: true });
     addWind(pineMat, 0.06, "y");
@@ -123,7 +148,7 @@ export class Vegetation {
     const rounds = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.5, 1).translate(0, 3.1, 0), roundMat, TREES);
     let nP = 0, nR = 0, nT = 0;
     for (let tries = 0; nT < TREES && tries < TREES * 40; tries++) {
-      const pt = sample(1.6);
+      const pt = sample(1.6, rng() < 0.35); // about a third of the trees grow on the hills
       if (!pt) continue;
       const [x, y, z] = pt;
       if (near(x, z, 5) || this.trees.some((t) => Math.hypot(t.x - x, t.z - z) < 3.2)) continue;
@@ -139,16 +164,18 @@ export class Vegetation {
     for (const t of [trunks, pines, pines2, rounds]) { t.castShadow = true; this.group.add(t); }
 
     // ---- rocks
-    const ROCKS = Math.round(area * 0.006);
-    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.6, 0), new THREE.MeshStandardMaterial({ color: 0x55546a, flatShading: true }), ROCKS);
+    // rocks: a few on the plains, most of them scattered over the sandy hills
+    const ROCKS = Math.min(Math.round(area * 0.012), 700);
+    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.6, 0), new THREE.MeshStandardMaterial({ color: 0x6a6878, flatShading: true }), ROCKS);
     n = 0;
     for (let i = 0; i < ROCKS; i++) {
-      const pt = sample(1);
+      const pt = sample(1, i % 4 !== 0);
       if (!pt || near(pt[0], pt[2], 2)) continue;
       q.setFromEuler(new THREE.Euler(rng() * 3, rng() * 3, rng() * 3));
       const sc = 0.5 + rng() * 1.2;
       m.compose(p.set(pt[0], pt[1] + 0.1, pt[2]), q, s.set(sc, sc * 0.7, sc));
       rocks.setMatrixAt(n++, m);
+      if (sc > 0.8) this.rocks.push({ x: pt[0], z: pt[2], r: 0.55 * sc });
     }
     rocks.count = n;
     rocks.castShadow = true;

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import type { Game } from "../sim/game";
 import { STD } from "../sim/tuning";
 import { PALETTE, PALETTE_CB, makeBigLantern, makeCharm, makeDrifter, makeMay, makeMote, makeShade } from "./models";
-import { Scenery } from "./decor/scenery";
+import { Landscape } from "./decor/landscape";
 import { Environment } from "./decor/environment";
 import { Vegetation } from "./decor/vegetation";
 import { Fauna } from "./decor/fauna";
@@ -14,9 +14,13 @@ export class View {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 900);
   readonly quality: "high" | "low";
+  private moon!: THREE.DirectionalLight;
+  private fogBase = 0.012;
   /** Ticket-03 colour-blind palette setting */
   colorblind = false;
-  private scenery: Scenery | null = null;
+  private land: Landscape | null = null;
+  /** visual height of the landscape at (x, z): 0 where the rules need flat ground */
+  private h = (x: number, z: number) => (this.land ? this.land.height(x, z) : 0);
   private hemi: THREE.HemisphereLight;
   private env: Environment;
   private may = makeMay();
@@ -47,12 +51,12 @@ export class View {
     this.hemi = new THREE.HemisphereLight(0x8090e0, 0x302040, 0.15);
     this.scene.add(this.hemi);
     this.env = new Environment(this.scene, this.quality);
-    const moon = new THREE.DirectionalLight(0xc8d4ff, 1.1); // cool moonlight keeps greens green
+    const moon = (this.moon = new THREE.DirectionalLight(0xc8d4ff, 1.1)); // cool moonlight keeps greens green
     moon.position.copy(this.env.moonDir).multiplyScalar(90);
     moon.castShadow = true;
     moon.shadow.mapSize.set(2048, 2048);
     const sc = moon.shadow.camera;
-    sc.left = sc.bottom = -70; sc.right = sc.top = 70; sc.far = 300;
+    sc.left = sc.bottom = -60; sc.right = sc.top = 60; sc.far = 300; // follows Mây (see render)
     this.scene.add(moon, moon.target, this.world, this.may.root);
 
     this.pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48),
@@ -100,14 +104,20 @@ export class View {
       ...map.shadeSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
       { x: map.start[0], z: map.start[2], r: 4 },
     ];
-    // creative: streams on the island + distant mountains in the cloud sea (render-only)
-    this.scenery = new Scenery(map, avoid);
-    this.world.add(this.scenery.group);
-    avoid.push(...this.scenery.streamSpots);
-    this.vegetation = new Vegetation({ map, avoid, quality: this.quality });
+    // creative: sandy hills, lake, river and waterfall ON the island (visual height only, see decor/landscape.ts)
+    this.land = new Landscape(map, avoid.filter((a) => a.r >= 2), this.quality); // lanterns, pads, charms, start stay flat
+    this.world.add(this.land.group);
+    avoid.push(...this.land.waterSpots());
+    this.vegetation = new Vegetation({ map, avoid, quality: this.quality, land: this.land });
     // creative extra: Mây cannot walk through trunks (trunk + body radius); never set in headless
-    game.extraSolids = this.vegetation.trees.map((t) => ({ x: t.x, z: t.z, r: t.r + 0.35 }));
-    this.fauna = new Fauna(this.vegetation.trees, map);
+    // ... and cannot walk through lantern poles (stone base r ~1.1 m; interact radius 2 m still reachable) or big rocks
+    game.extraSolids = [
+      ...this.vegetation.trees.map((t) => ({ x: t.x, z: t.z, r: t.r + 0.35 })),
+      ...this.vegetation.rocks.map((r) => ({ x: r.x, z: r.z, r: r.r + 0.3 })),
+      ...game.lanterns.map((l) => ({ x: l.x, z: l.z, r: 1.0 })),
+    ];
+    this.fogBase = map.scale ? 0.006 : 0.012;
+    this.fauna = new Fauna(this.vegetation.trees, map, this.land);
     this.world.add(this.vegetation.group, this.fauna.group);
     this.lanterns = game.lanterns.map((l) => {
       const v = makeBigLantern();
@@ -135,7 +145,8 @@ export class View {
     const p = game.player;
     const visible = game.playerActive;
     this.may.root.visible = visible && !(p.invulnTicks > 0 && Math.floor(time * 12) % 2 === 0);
-    this.may.root.position.set(p.x, p.y, p.z);
+    const hp = this.h(p.x, p.z); // Mây walks over the visual hills / wades in the lake
+    this.may.root.position.set(p.x, p.y + hp, p.z);
     this.may.root.rotation.y = Math.atan2(p.faceX, p.faceZ);
     this.may.lamp.intensity = 2 + p.carried * 0.6;
 
@@ -165,7 +176,10 @@ export class View {
     });
     const k = lit / game.lanterns.length;
     this.hemi.intensity = 0.15 + 0.55 * k;
-    (this.scene.fog as THREE.FogExp2).density = 0.012 - k * 0.005;
+    (this.scene.fog as THREE.FogExp2).density = this.fogBase * (1 - k * 0.4);
+    // shadows follow Mây so big maps keep sharp shadows
+    this.moon.target.position.set(p.x, p.y, p.z);
+    this.moon.position.copy(this.env.moonDir).multiplyScalar(90).add(this.moon.target.position);
 
     game.charms.forEach((c, i) => {
       const v = this.charms[i];
@@ -181,7 +195,7 @@ export class View {
       let v = this.shades.get(s.id);
       if (!v) { v = makeShade(); this.shades.set(s.id, v); this.scene.add(v.root); }
       const stunned = s.state === "stunned";
-      v.root.position.set(s.x, s.y + Math.sin(time * 4 + s.x) * 0.12, s.z);
+      v.root.position.set(s.x, s.y + Math.max(0, this.h(s.x, s.z)) + Math.sin(time * 4 + s.x) * 0.12, s.z);
       v.root.lookAt(p.x, s.y, p.z);
       const grow = s.state === "spawning" ? 1 - s.stateTicks / STD.shadeSpawningTicks : 1;
       v.root.scale.setScalar(Math.max(0.05, grow) * (1 + Math.sin(time * 6 + s.z) * 0.06));
@@ -200,7 +214,7 @@ export class View {
       seenM.add(m.id);
       let v = this.motes.get(m.id);
       if (!v) { v = makeMote(); this.motes.set(m.id, v); this.scene.add(v); }
-      v.position.set(m.x, m.y + 0.8 + Math.sin(time * 2.5 + m.x * 3) * 0.2, m.z);
+      v.position.set(m.x, m.y + Math.max(0, this.h(m.x, m.z)) + 0.8 + Math.sin(time * 2.5 + m.x * 3) * 0.2, m.z);
       v.visible = !(m.ttl !== null && m.ttl < 120 && Math.floor(time * 8) % 2 === 0);
     }
     for (const [id, v] of this.motes) if (!seenM.has(id)) { this.scene.remove(v); this.motes.delete(id); }
@@ -211,7 +225,7 @@ export class View {
       seenD.add(d.id);
       let v = this.drifters.get(d.id);
       if (!v) { v = makeDrifter(); this.drifters.set(d.id, v); this.scene.add(v.root); }
-      v.root.position.set(d.x, d.y, d.z);
+      v.root.position.set(d.x, d.y + Math.max(0, this.h(d.x, d.z)), d.z);
       const dir = d.state === "flee" ? Math.atan2(d.x - p.x, d.z - p.z) : Math.atan2(p.x - d.x, p.z - d.z);
       v.root.rotation.y = dir;
       const pos = v.ribbon.geometry.attributes.position as THREE.BufferAttribute;
@@ -228,7 +242,7 @@ export class View {
     this.pulseT = Math.min(1, this.pulseT + dt * 2.5);
     (this.pulseRing.material as THREE.MeshBasicMaterial).opacity = (1 - this.pulseT) * 0.8;
     this.pulseRing.scale.setScalar(0.5 + this.pulseT * game.t.pulse_radius);
-    this.pulseRing.position.set(p.x, p.y + 0.8, p.z);
+    this.pulseRing.position.set(p.x, p.y + hp + 0.8, p.z);
 
     // wind leaves
     const windy = game.windActiveTicks > 0 || game.windWarning;
@@ -239,23 +253,24 @@ export class View {
         const ph = (time * 0.4 + i * 0.137) % 1;
         const off = (i * 7.31) % 1, h = (i * 3.17) % 1;
         this.leafPos[i * 3] = p.x + (ph - 0.5) * 30 * wx + (off - 0.5) * 20 * wz;
-        this.leafPos[i * 3 + 1] = p.y + 0.5 + h * 4 + Math.sin(time * 5 + i) * 0.3;
+        this.leafPos[i * 3 + 1] = p.y + hp + 0.5 + h * 4 + Math.sin(time * 5 + i) * 0.3;
         this.leafPos[i * 3 + 2] = p.z + (ph - 0.5) * 30 * wz - (off - 0.5) * 20 * wx;
       }
       (this.leaves.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     }
 
     this.env.update(time);
-    this.scenery?.update(time);
+    this.land?.update(time);
     this.vegetation?.update(time);
     this.fauna?.update(dt, time, [{ x: p.x, z: p.z, w: 1 }, ...game.shades.map((s) => ({ x: s.x, z: s.z, w: 1.5 }))]);
 
     // third-person camera behind Mây, looking along (sin yaw, cos yaw)
     const th = (camYawDeg * Math.PI) / 180;
     const fx = Math.sin(th), fz = Math.cos(th);
-    const target = new THREE.Vector3(p.x - fx * 9, Math.max(p.y, -2) + 5.5, p.z - fz * 9);
+    const camY = Math.max(p.y + hp, -2);
+    const target = new THREE.Vector3(p.x - fx * 9, camY + 5.5, p.z - fz * 9);
     this.camera.position.lerp(target, 1 - Math.exp(-dt * 8));
-    this.camera.lookAt(p.x + fx * 2, Math.max(p.y, -2) + 1.2, p.z + fz * 2);
+    this.camera.lookAt(p.x + fx * 2, camY + 1.2, p.z + fz * 2);
 
     this.renderer.render(this.scene, this.camera);
   }

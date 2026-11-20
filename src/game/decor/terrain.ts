@@ -8,8 +8,9 @@ const mat = (color: number, extra: THREE.MeshStandardMaterialParameters = {}) =>
 
 /** Round island: flat grass top at Y=0, sand rim (last 2 m), rocky cliff down into the cloud sea. */
 function roundIsland(R: number, cx: number, cz: number): THREE.Mesh {
+  // the top is drawn by Landscape (hills, lake, river); the lathe keeps only the rim band and the cliffs
   const profile = [
-    new THREE.Vector2(0.01, 0), new THREE.Vector2(R - 2, 0), new THREE.Vector2(R, 0),
+    new THREE.Vector2(R - 2, 0), new THREE.Vector2(R, 0),
     new THREE.Vector2(R + 0.6, -1.5), new THREE.Vector2(R * 0.85, -9), new THREE.Vector2(R * 0.4, -18),
   ];
   const geo = new THREE.LatheGeometry(profile, 96);
@@ -50,48 +51,78 @@ function sector(r0: number, r1: number, a0: number, a1: number, y0: number, y1: 
   return m;
 }
 
+/** Irregular island (explore maps): sand rim band + rocky cliff that follows the coastline coast(a). */
+function irregularIsland(cx: number, cz: number, coast: (a: number) => number): THREE.Mesh {
+  const N = 256, rings: [number, number][] = [[-2, 0], [0, 0], [0.6, -1.5], [-0.15, -9], [-0.6, -18]]; // (radius offset or factor, y)
+  const pos: number[] = [], col: number[] = [], idx: number[] = [];
+  const sand = new THREE.Color(PALETTE.sand), rock = new THREE.Color(0x3d3a48);
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2, R = coast(a);
+    rings.forEach(([o, y], k) => {
+      const r = k <= 2 ? R + o : R * (1 + o);
+      pos.push(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r);
+      col.push(...(k <= 1 ? sand : rock).toArray());
+    });
+  }
+  const K = rings.length;
+  for (let i = 0; i < N; i++) for (let k = 0; k + 1 < K; k++) {
+    const a = i * K + k, b = (i + 1) * K + k;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide, flatShading: true }));
+  m.receiveShadow = true;
+  return m;
+}
+
 export function buildTerrain(map: NightMap): THREE.Group {
   const g = new THREE.Group();
-  if (map.night === 1) g.add(roundIsland(40, 0, 0));
+  const S = map.scale ?? 1; // explore maps are scaled x2
+  if (map.isles) for (const is of map.isles) g.add(irregularIsland(is.cx, is.cz, is.coast));
+  else if (map.night === 1) g.add(roundIsland(40, 0, 0));
+  else if (map.night === 2) g.add(roundIsland(28, 0, 0), roundIsland(28, 70, 0));
+  else g.add(roundIsland(45, 0, 0));
   if (map.night === 2) {
-    g.add(roundIsland(28, 0, 0), roundIsland(28, 70, 0));
-    // bamboo bridge x in [26, 44], z in [-2, 2], no railing
+    // bamboo bridge x in [26, 44], z in [-2, 2] (x S), no railing
     const bridge = new THREE.Group();
-    for (let x = 26.25; x < 44; x += 0.5) {
-      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 4), mat(PALETTE.wood));
+    for (let x = 26 * S + 0.25; x < 44 * S; x += 0.5) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 4 * S), mat(PALETTE.wood));
       plank.position.set(x, -0.06, 0);
       plank.receiveShadow = true;
       bridge.add(plank);
     }
-    for (const z of [-2, 2]) {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 18, 6).rotateZ(Math.PI / 2), mat(0x8a9a4a));
-      pole.position.set(35, -0.15, z);
+    for (const z of [-2 * S, 2 * S]) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 18 * S, 6).rotateZ(Math.PI / 2), mat(0x8a9a4a));
+      pole.position.set(35 * S, -0.15, z);
       bridge.add(pole);
     }
     g.add(bridge);
   }
   if (map.night === 3) {
-    g.add(roundIsland(45, 0, 0));
-    g.add(sector(12, 24, 0, 180, 0, 3, PALETTE.grass)); // tier 1: half ring z > 0
-    const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 6, 48), mat(PALETTE.grass));
+    g.add(sector(12 * S, 24 * S, 0, 180, 0, 3, PALETTE.grass)); // tier 1: half ring z > 0
+    const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(8 * S, 8 * S, 6, 64), mat(PALETTE.grass));
     tier2.position.y = 3; tier2.castShadow = tier2.receiveShadow = true;
     g.add(tier2);
-    for (const d of RAMPS_DEG) { // 3 m wide ramp from r=30 (Y=0) to r=24 (Y=3)
-      const len = Math.hypot(6, 3);
-      const ramp = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, 3), mat(PALETTE.sand));
+    for (const d of RAMPS_DEG) { // 3 m wide ramp from r=30 (Y=0) to r=24 (Y=3), x S horizontally
+      const len = Math.hypot(6 * S, 3);
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, 3 * S), mat(PALETTE.sand));
       const a = (d * Math.PI) / 180;
-      ramp.position.set(27 * Math.cos(a), 1.5 - 0.15, 27 * Math.sin(a));
+      ramp.position.set(27 * S * Math.cos(a), 1.5 - 0.15, 27 * S * Math.sin(a));
       ramp.rotation.y = -a;
-      ramp.rotateZ(-Math.atan2(3, 6)); // local +X points outward, so the inner end is raised
+      ramp.rotateZ(-Math.atan2(3, 6 * S)); // local +X points outward, so the inner end is raised
       ramp.receiveShadow = true;
       g.add(ramp);
     }
-    // bell tower (r = 2, 8 m) on tier 2
-    const tower = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.2, 8, 12), mat(0x8a7f74));
+    // bell tower (r = 2 x S, 8 m) on tier 2
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(2 * S, 2.2 * S, 8, 16), mat(0x8a7f74));
     tower.position.y = 10; tower.castShadow = true;
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.8, 2.2, 12), mat(0x7a2e22));
-    roof.position.y = 15.1;
-    const bell = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 8, 0, Math.PI * 2, 0, Math.PI / 1.6), mat(PALETTE.gold, { metalness: 0.6, roughness: 0.4 }));
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.8 * S, 2.2 * S, 16), mat(0x7a2e22));
+    roof.position.y = 14 + 1.1 * S;
+    const bell = new THREE.Mesh(new THREE.SphereGeometry(0.9 * S, 12, 8, 0, Math.PI * 2, 0, Math.PI / 1.6), mat(PALETTE.gold, { metalness: 0.6, roughness: 0.4 }));
     bell.position.y = 13.4;
     g.add(tower, roof, bell);
   }

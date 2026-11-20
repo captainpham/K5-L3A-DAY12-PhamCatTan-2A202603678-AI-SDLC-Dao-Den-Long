@@ -137,6 +137,20 @@ Ticket-03 "Đèn cạn dầu", Test Contract **v1.2**. Quyết định thiết k
 | Đèn "đầy" | fuel = 100 đúng; vì hao ở bước 2 trước tương tác nên trên thực tế đèn chỉ đầy trong tick vừa thắp/châm |
 | Drain bị chặn bởi vùng an toàn đèn khác | Vẫn áp dụng: đèn có fuel ≥ 30 vẫn chặn ở mép 6 m |
 
+### Sáng tạo sau Phase 3: đồi, hồ, sông, thác trên đảo
+
+Bản đồ chuẩn bắt buộc mặt đảo phẳng (Y = 0) và luật nhặt/chạm/rơi dùng Y đó, nên đồi **không** đưa vào logic.
+`src/game/decor/landscape.ts` thêm một **độ cao hiển thị** h(x, z) chỉ dùng khi vẽ: Mây, đom đóm, Bóng Mực, động vật, cây được nâng theo h.
+h = 0 trong bán kính 3–6 m quanh đèn, bục, bùa, điểm xuất phát và ở mép đảo, cầu, tầng, dốc (kiểm tra bằng script: |h| = 0.000 tại mọi điểm đó, cả 3 Đêm).
+Headless không import phần này (test `headless bundle contains no rendering code`). Dãy núi xa ngoài biển (Phase 3) đã bỏ theo yêu cầu.
+
+### Sáng tạo: chế độ "Đảo lớn (khám phá)"
+
+Người chơi muốn đảo rộng hơn, map to gấp đôi, núi cao gấp 10, đảo không tròn. Ticket-02 chốt bản đồ chuẩn và test ẩn dựa vào đó, nên làm thành **chế độ chọn thêm** ở menu:
+`exploreMap(n)` (src/sim/explore.ts) = bản đồ chuẩn x2, bờ chỉ phình ra (hệ số 1..1+amp, nên mọi đèn/điểm sinh vẫn trên đất), Đêm 2 phình ít để hai đảo không dính nhau,
+núi 25–45 m là `ground()` thật (đặt cách đèn, bục, bùa, điểm xuất phát; điểm sinh đom đóm/Bóng Mực có thể nằm trên sườn núi, Y = mặt núi).
+Bục nhảy `vh` x2 để quãng bay x2. Headless không import file này (test). Cột đèn (r 1 m), đá lớn, cây chặn Mây qua `extraSolids` (chỉ bản chơi).
+
 ### Điều khiển -> input contract
 
 Camera nhìn theo hướng `(sin yaw, cos yaw)`. Với công thức xoay của contract, `W` = `z +1`, `S` = `z -1`, `A` = `x +1`, `D` = `x -1` (bên phải màn hình là `x -1`).

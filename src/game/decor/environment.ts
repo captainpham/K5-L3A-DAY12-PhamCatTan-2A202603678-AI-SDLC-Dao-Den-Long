@@ -7,6 +7,12 @@ import { PALETTE } from "../models";
 export const SEA_Y = -14;
 
 /** Tileable normal map generated in code (sum of integer-frequency waves), so no texture file is needed. */
+let normalsCache: THREE.DataTexture | null = null;
+/** Tileable normal map generated in code, shared by the sea (Water addon), the lake and the river shaders. */
+export function waterNormals(): THREE.DataTexture {
+  return (normalsCache ??= makeWaterNormals());
+}
+
 function makeWaterNormals(size = 256): THREE.DataTexture {
   const waves: [number, number, number, number][] = [];
   let seed = 7;
@@ -43,7 +49,7 @@ export class Environment {
     this.water = new Water(new THREE.PlaneGeometry(1600, 1600), {
       textureWidth: quality === "high" ? 512 : 256,
       textureHeight: quality === "high" ? 512 : 256,
-      waterNormals: makeWaterNormals(),
+      waterNormals: waterNormals(),
       sunDirection: this.moonDir.clone(),
       sunColor: 0xbfd0ff,
       waterColor: PALETTE.cloudSea,

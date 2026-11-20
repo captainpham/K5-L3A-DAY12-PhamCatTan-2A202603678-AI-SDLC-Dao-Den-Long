@@ -1,6 +1,7 @@
 // Windowed game: 3-night campaign, fixed 60 Hz simulation (same Game class as headless), Three.js view, HUD, menus, audio.
 import { Game } from "../sim/game";
-import { MAPS } from "../sim/maps";
+import { MAPS, type NightMap } from "../sim/maps";
+import { exploreMap } from "../sim/explore";
 import { DT } from "../sim/tuning";
 import { Audio, loadSettings, saveSettings } from "./audio";
 import { Controls } from "./controls";
@@ -29,6 +30,10 @@ type Screen = "menu" | "intro" | "play" | "pause" | "settings" | "result" | "daw
 let screen: Screen = "menu";
 let settingsBack: Screen = "menu";
 let night: 1 | 2 | 3 = 1;
+/** creative "Đảo lớn" mode: x2 map, irregular islands, real mountains (windowed game only; headless is always standard) */
+let explore = false;
+const exploreCache: Partial<Record<1 | 2 | 3, NightMap>> = {};
+const mapFor = (n: 1 | 2 | 3) => (explore ? (exploreCache[n] ??= exploreMap(n)) : MAPS[n]);
 let game = new Game({ seed: 1, night: 1 });
 let wonScores: number[] = [];
 let pendingPause = false;
@@ -53,24 +58,27 @@ function showMenu(): void {
     <p>Giúp Mây gom đom đóm, thắp lại Đèn Lồng Lớn trên ba hòn đảo và né Bóng Mực trong sương đen.</p>
     <p><kbd>WASD</kbd> đi · <kbd>Space</kbd> nhảy · <kbd>Shift</kbd> lướt · <kbd>E</kbd> nạp đèn · <kbd>F</kbd> tỏa sáng<br/>
     Kéo chuột / <kbd>←</kbd><kbd>→</kbd> xoay camera · <kbd>Esc</kbd>/<kbd>P</kbd> tạm dừng</p>
-    <button id="b-start">Bắt đầu</button><button class="ghost" id="b-set">Cài đặt</button>
+    <p><button id="b-start">Bắt đầu · Đảo chuẩn</button><button id="b-big">Bắt đầu · Đảo lớn (khám phá)</button></p>
+    <p style="font-size:13px">Đảo chuẩn = bản đồ của ticket. Đảo lớn = bản đồ to gấp đôi, đảo nhiều hình dạng, núi cao 25–45 m (sáng tạo).</p>
+    <button class="ghost" id="b-set">Cài đặt</button>
     <p style="font-size:13px">Chơi thử từng đêm: <button class="ghost" id="b-n1">Đêm 1</button><button class="ghost" id="b-n2">Đêm 2</button><button class="ghost" id="b-n3">Đêm 3</button></p>`,
   {
-    "b-start": () => { wonScores = []; showIntro(1); },
+    "b-start": () => { explore = false; wonScores = []; showIntro(1); },
+    "b-big": () => { explore = true; wonScores = []; showIntro(1); },
     "b-set": () => showSettings("menu"),
-    "b-n1": () => { wonScores = []; showIntro(1); },
-    "b-n2": () => { wonScores = []; showIntro(2); },
-    "b-n3": () => { wonScores = []; showIntro(3); },
+    "b-n1": () => { explore = false; wonScores = []; showIntro(1); },
+    "b-n2": () => { explore = false; wonScores = []; showIntro(2); },
+    "b-n3": () => { explore = false; wonScores = []; showIntro(3); },
   });
 }
 
 function showIntro(n: 1 | 2 | 3): void {
   night = n;
   screen = "intro";
-  game = new Game({ seed: (Math.random() * 2 ** 31) | 0, night: n });
+  game = new Game({ seed: (Math.random() * 2 ** 31) | 0, night: n, map: explore ? mapFor(n) : undefined });
   view.load(game);
   $("hudroot").classList.add("hidden");
-  card(`<h2>Đêm ${n}</h2><h1>${MAPS[n].name}</h1><p class="quote"><b>Ông Đăng:</b> “${LINES[n]}”</p>
+  card(`<h2>Đêm ${n}</h2><h1>${mapFor(n).name}</h1><p class="quote"><b>Ông Đăng:</b> “${LINES[n]}”</p>
     <button id="b-go">Vào đêm</button>`, { "b-go": startNight });
 }
 

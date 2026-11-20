@@ -53,7 +53,7 @@ Tổng điểm game là tổng điểm các Đêm đã thắng. Số liệu: [ga
 ## Test và chế độ headless
 
 ```bash
-npm test                  # 114 test: luật chuẩn, dầu đèn, 3 Đêm, CLI, bảng màu, 21 scenario headless
+npm test                  # 127 test: luật chuẩn, dầu đèn, 3 Đêm, CLI, bảng màu, 21 scenario headless
 npm run proof -- phase-3  # chạy các scenario 2 lần, lưu output thật vào docs/proof/phase-3/
 node dist/headless.cjs --seed 1 --night 2 --ticks 600 --out out.jsonl \
   [--scenario scenario.json] [--inputs inputs.json] [--snapshot-every 10]
@@ -83,6 +83,8 @@ kiểm tra điều đó, và toàn bộ test vẫn đạt.
   (tắt trong headless nên không đổi Test Contract), và không mọc gần đèn, bục, bùa hay điểm sinh đom đóm.
 - **Động vật:** thỏ nhảy, sóc quanh gốc cây, hươu gặm cỏ. Chúng đi lang thang và **bỏ chạy khi Mây hoặc Bóng Mực tới gần**.
 - **Biển mây phản chiếu** (addon `Water` của three.js, màu chuẩn #12384A), trời sao và trăng.
-- **Suối và thác:** suối uốn lượn trên mặt đảo chảy ra mép đảo thành thác đổ xuống biển mây (chỉ là hình ảnh, Mây đi qua được).
-- **Núi non:** dãy núi tuyết xa ngoài biển mây dưới ánh trăng.
+- **Chế độ "Đảo lớn (khám phá)"** (chọn ở menu; mặc định vẫn là Đảo chuẩn theo ticket): bản đồ **to gấp đôi**, đảo có **bờ lồi lõm** nhiều hình dạng (không còn tròn), **núi thật cao 25–45 m** mà Mây leo lên được (đá, cây, hoa trên sườn, tuyết trên đỉnh). Đèn, bục, bùa, điểm xuất phát giữ nguyên vị trí tương đối; bục nhảy đẩy mạnh gấp đôi để vẫn bay tới đảo kia. Headless và test ẩn luôn dùng bản đồ chuẩn (`src/sim/explore.ts`, có test riêng `tests/explore.test.ts`).
+- **Không đi xuyên** cây, đá lớn và cột Đèn Lồng (chỉ ở bản chơi; vẫn nạp đèn được vì bán kính tương tác 2 m).
+- **Đồi cát trên đảo:** 4–5 đồi cát gợn sóng cao tới ~4,5 m, có đá, cây và hoa mọc trên đó. Mây đi lên đồi được: đồi là **độ cao hiển thị** (logic vẫn ở Y = 0 theo bản đồ chuẩn, nên Test Contract không đổi), và mặt đất luôn phẳng quanh đèn, bục, bùa, điểm xuất phát, cầu, tầng, dốc và mép đảo.
+- **Hồ, sông, thác:** hồ dùng addon `Water` của three.js (phản chiếu thật trời, trăng, cây, đèn), Mây lội qua được. Sông chảy từ đồi vào hồ rồi từ hồ ra mép đảo thành **thác** cong đổ xuống biển mây, có bọt và hơi nước. Sông và thác dùng shader dòng chảy (2 lớp normal map trượt, phản chiếu Fresnel, ánh trăng).
 - **Âm thanh tổng hợp bằng WebAudio**, không dùng file âm thanh.

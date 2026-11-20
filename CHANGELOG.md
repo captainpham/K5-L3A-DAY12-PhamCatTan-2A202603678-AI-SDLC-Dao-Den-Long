@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased (sáng tạo, sau tag phase-3)
+- Chế độ "Đảo lớn (khám phá)" ở menu: bản đồ x2, đảo bờ lồi lõm, núi 25–45 m là địa hình thật trong chế độ này. Không đổi bản đồ chuẩn, headless, Test Contract.
+- Đồi cát, hồ (three.js `Water`), sông, thác trên đảo (độ cao hiển thị ở bản đồ chuẩn).
+- Bản chơi: không đi xuyên cây, đá lớn, cột Đèn Lồng; thêm cỏ, hoa, cây (có giới hạn để giữ FPS).
+- Dãy núi xa ngoài biển (Phase 3) bị bỏ.
+
 ## Phase 3 — Ticket-03 "Đèn cạn dầu" (Test Contract v1.2)
 
 ### ⚠ Breaking changes

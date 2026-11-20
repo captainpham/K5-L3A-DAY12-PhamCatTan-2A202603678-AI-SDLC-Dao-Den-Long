@@ -24,6 +24,15 @@ export interface NightMap {
   solid(x: number, z: number, y: number): boolean;
   /** world bounds for rendering */
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  // ---- optional, set only by the creative explore maps (src/sim/explore.ts); standard maps leave them undefined
+  /** XZ scale relative to the standard map (render uses it for tiers, bridge, tower) */
+  scale?: number;
+  /** real mountains (ground height) */
+  mountains?: { x: number; z: number; r: number; h: number }[];
+  /** irregular coastline per island: radius at angle a (rad, +X toward +Z) */
+  isles?: { cx: number; cz: number; coast(a: number): number }[];
+  /** cells drawn as structures (tiers, ramps) rather than terrain */
+  structure?(x: number, z: number): boolean;
 }
 
 const rad = (d: number) => (d * Math.PI) / 180;

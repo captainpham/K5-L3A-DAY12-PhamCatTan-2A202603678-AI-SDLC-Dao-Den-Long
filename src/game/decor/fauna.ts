@@ -88,7 +88,8 @@ export class Fauna {
   private rng = makeRng(99);
   readonly group = new THREE.Group();
 
-  constructor(private trees: Spot[], private map: NightMap) {
+  constructor(private trees: Spot[], private map: NightMap,
+    private land: { height(x: number, z: number): number; isWater(x: number, z: number): boolean } | null = null) {
     const scene = this.group;
     const counts: [Kind, number][] = [["rabbit", 7], ["squirrel", 5], ["deer", 3]];
     for (const [kind, n] of counts) {
@@ -112,14 +113,14 @@ export class Fauna {
     const b = this.map.bounds;
     for (let i = 0; i < 40; i++) { // a random point on ground level 0, away from cliff edges
       const x = b.minX + this.rng() * (b.maxX - b.minX), z = b.minZ + this.rng() * (b.maxZ - b.minZ);
-      if (this.map.ground(x, z) === 0 && this.map.ground(x + 2, z) === 0 && this.map.ground(x - 2, z) === 0 && this.map.ground(x, z + 2) === 0 && this.map.ground(x, z - 2) === 0) return [x, z];
+      if (this.map.ground(x, z) === 0 && this.map.ground(x + 2, z) === 0 && this.map.ground(x - 2, z) === 0 && this.map.ground(x, z + 2) === 0 && this.map.ground(x, z - 2) === 0 && !this.land?.isWater(x, z)) return [x, z];
     }
     return [this.map.start[0], this.map.start[2] + 5];
   }
 
   /** animals stay on ground level 0 and never step over an edge */
   private walkable(x: number, z: number): boolean {
-    return this.map.ground(x, z) === 0 && !this.map.solid(x, z, 0);
+    return this.map.ground(x, z) === 0 && !this.map.solid(x, z, 0) && !this.land?.isWater(x, z);
   }
 
   /** threats: positions of Mây and the ink shades (read from the simulation). */
@@ -158,7 +159,7 @@ export class Fauna {
 
       // animate
       const rig = a.rig;
-      rig.root.position.set(a.x, 0, a.z);
+      rig.root.position.set(a.x, this.land ? this.land.height(a.x, a.z) : 0, a.z);
       rig.root.rotation.y = a.heading;
       const cyc = (a.phase += dt * (2 + speed * 2.2));
       if (spec.hop) {

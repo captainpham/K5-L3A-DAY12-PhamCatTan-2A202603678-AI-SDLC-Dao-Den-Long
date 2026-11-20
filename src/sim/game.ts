@@ -17,7 +17,11 @@ export const byId = (a: { id: string }, b: { id: string }) => idNum(a.id) - idNu
 /** fuel units (1/60) -> fuel with 1 decimal for output */
 export const fuel1 = (u: number) => Math.round((Math.max(0, u) / 60) * 10) / 10;
 
-export interface GameOptions { seed: number; night?: 1 | 2 | 3; tuning?: Tuning }
+export interface GameOptions {
+  seed: number; night?: 1 | 2 | 3; tuning?: Tuning;
+  /** creative explore map (windowed game only). The headless runner never sets it -> always the standard map. */
+  map?: NightMap;
+}
 
 export class Game {
   readonly t: Tuning;
@@ -64,7 +68,7 @@ export class Game {
   constructor(opts: GameOptions) {
     this.t = opts.tuning ?? TUNING;
     this.night = opts.night ?? 1;
-    this.map = MAPS[this.night];
+    this.map = opts.map ?? MAPS[this.night];
     this.rng = makeRng(opts.seed);
     this.timeLeftTicks = secToTicks(nightDurationS(this.night));
     this.randomDrifters = this.map.drifters;
