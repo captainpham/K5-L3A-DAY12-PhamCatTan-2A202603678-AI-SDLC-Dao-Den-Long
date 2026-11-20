@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng
 
-> **Video demo:** _(đính kèm GitHub Release `v1.0.0` hoặc `docs/demo/demo.mp4`; link sẽ đặt ở đây khi quay xong)_
+> **Video demo (.mp4):** [game.mp4 trong Release v1.0.0](https://github.com/captainpham/K5-L3A-DAY12-PhamCatTan-2A202603678-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/game.mp4) · [Trang Release v1.0.0](https://github.com/captainpham/K5-L3A-DAY12-PhamCatTan-2A202603678-AI-SDLC-Dao-Den-Long/releases/tag/v1.0.0) (có thêm bản chạy được `dao-den-long-v1.0.0.tar.gz`)
 
 ![Menu](docs/proof/phase-4/menu.png)
 

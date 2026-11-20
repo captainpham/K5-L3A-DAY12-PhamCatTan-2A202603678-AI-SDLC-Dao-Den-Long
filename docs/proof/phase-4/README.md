@@ -22,9 +22,9 @@ Máy đo: Windows 11, AMD Ryzen 9 5900HS + Radeon Graphics (iGPU), 15 GB RAM, No
 | 4. Chữ UI ≥ 18 px ở 1280×720; chữ lớn ×1.25 | CSS `1rem = 18px`, `html.large = 22.5px` | `night1-hud.png`, `settings-accessibility.png` | ĐẠT (đọc từ CSS, chưa có test đo pixel tự động) |
 | 5. README: mô tả, ảnh, yêu cầu hệ thống, cài đặt ≤ 3 lệnh, điều khiển, test, headless, bench, soak | `README.md` | file | ĐẠT. **Chưa thử trên máy sạch khác** |
 | 5. CHANGELOG 4 phase, CREDITS, LICENSE | `CHANGELOG.md`, `CREDITS.md`, `LICENSE` | file | ĐẠT |
-| 5. GitHub Release v1.0.0 có bản chạy được | `npm run release` → `release/dao-den-long-v1.0.0.tar.gz` (web tĩnh + server + headless) | file local | **CHƯA ĐẠT**: Release phải tạo trên GitHub (máy chưa có `gh`) |
+| 5. GitHub Release v1.0.0 có bản chạy được | `npm run release` → gói web tĩnh + server + headless, đính kèm Release | `dao-den-long-v1.0.0.tar.gz` trên trang Release (HTTP 200 khi chưa đăng nhập) | ĐẠT |
 | 6. Contract v1.3: `contract_version`, `bench_cmd`, `soak_cmd`; v1.0–v1.2 giữ nguyên | `tests/cli.test.ts`, `tests/release.test.ts`; 21 scenario headless chạy 2 lần | `RESULTS.md` | ĐẠT |
 | 7. Retro 1–2 trang | `docs/notes/retro.md` | file | ĐẠT |
 | 7. Công cụ quay video: nút quay màn hình trong game, tự dừng 4:55, xuất `.mp4` | test logic (`recorder`) + quay thật 4,4 s trong Chrome, file có đầu `ftyp` hợp lệ | `record-button.png` | ĐẠT |
-| 7. Video demo `.mp4` < 5 phút | cần người quay (dùng nút trên) | — | **CHƯA ĐẠT**: chưa quay |
+| 7. Video demo `.mp4` < 5 phút | đính kèm Release v1.0.0, link ở đầu README | `game.mp4` (147 MB, tải được khi chưa đăng nhập) | ĐẠT về đính kèm và link; **thời lượng chưa kiểm bằng công cụ** |
 | Regression Phase 1–3 | 141 test + `p1-*`, `p2-*`, `p3-*` | `RESULTS.md` | ĐẠT |
