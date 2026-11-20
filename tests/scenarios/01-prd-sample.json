@@ -1,9 +1,0 @@
-{
-  "requirement": "R1 movement + R3 pickup + R5 pulse (lab sample scenario/inputs from Test Contract v1.0)",
-  "seed": 1, "ticks": 240, "snapshot_every": 60,
-  "scenario": { "player": { "pos": [0, 0, 0], "carried": 0, "flames": 3 }, "random_motes": false, "random_shades": false,
-    "motes": [[0, 0, 5]], "shades": [{ "pos": [10, 0, 0] }], "lanterns": [{ "id": "L1", "pos": [0, 0, 25], "deposited": 0 }], "time_left_s": 300 },
-  "inputs": { "frames": [ { "tick": 0, "move": [0, 1], "cam_yaw_deg": 0 }, { "tick": 120, "move": [0, 0], "interact": true },
-    { "tick": 121, "interact": false }, { "tick": 200, "pulse": true }, { "tick": 201, "pulse": false } ] },
-  "expect": { "events": ["mote_picked", "pulse"], "end": { "ticks": 240, "state": "playing", "score": 30 } }
-}

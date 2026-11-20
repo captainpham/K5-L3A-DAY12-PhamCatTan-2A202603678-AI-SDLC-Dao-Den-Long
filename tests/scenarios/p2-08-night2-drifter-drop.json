@@ -1,0 +1,49 @@
+{
+  "requirement": "Gió Lạc: pulse on a fleeing drifter with loot drops it (drifter_drop) as dropped motes",
+  "night": 2,
+  "seed": 1,
+  "ticks": 150,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [
+      {
+        "id": "D1",
+        "pos": [
+          2,
+          0,
+          0
+        ],
+        "state": "flee",
+        "stolen": 3
+      }
+    ],
+    "charms": [],
+    "player": {
+      "carried": 3
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "pulse": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "drifter_drop",
+      "pulse"
+    ],
+    "end": {
+      "ticks": 150,
+      "state": "playing"
+    }
+  }
+}

@@ -12,7 +12,7 @@ Chạy lại toàn bộ: `npm ci && npm test && npm run proof` (ở tag `phase-1
 | R5 | Bóng Mực đuổi, chạm mất máu | Test chase speed, hit + invuln, safe_radius, spawn; scenario 03, 05, 07 | `03-...jsonl`, `05-...jsonl`, `07-...jsonl` | ĐẠT |
 | R6 | Tỏa sáng | Test stun/push/cost/cooldown/radius; scenario 04 | `04-pulse-stun-push.jsonl` | ĐẠT |
 | R7 | Thắng / thua / điểm | Scenario 02 (won), 03 (no_flames), 06 (dawn) | `RESULTS.md` | ĐẠT |
-| R7 | HUD, chơi lại | Chơi thử bản web | ảnh chụp / video demo | CHƯA CÓ BẰNG CHỨNG (cần chụp ảnh khi chơi) |
+| R7 | HUD, thắng khi chơi thật, chơi lại | Chơi thử bản web (`npm start`) đến khi thắng | `play-win-hud.png`: HUD hiện lửa (2), đom đóm 0/10, đèn 5/5, giờ còn 02:59, điểm 1256, trạng thái tỏa sáng; màn "Đảo đã sáng trở lại!" có nút "Chơi lại" | ĐẠT (thắng + HUD). Nút chơi lại: thấy trên ảnh, chưa có ảnh sau khi bấm |
 | C1 | Contract: CLI, JSONL, mã thoát, tất định | `tests/cli.test.ts` (exit 0/2, làm tròn 3 số, 2 lần chạy giống hệt); mọi scenario chạy 2 lần | `RESULTS.md` | ĐẠT |
 
 Tự động hoá: CI (`.github/workflows/ci.yml`) chạy build + typecheck + test + so sánh tất định trên Ubuntu và macOS mỗi lần push.

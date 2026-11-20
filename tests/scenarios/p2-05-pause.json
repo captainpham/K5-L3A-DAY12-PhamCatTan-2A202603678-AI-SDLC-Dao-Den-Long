@@ -1,0 +1,50 @@
+{
+  "requirement": "Pause: tick advances, sim_tick/time/motion frozen, snapshot state paused; resume continues",
+  "night": 1,
+  "seed": 1,
+  "ticks": 60,
+  "snapshot_every": 5,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": []
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "move": [
+          0,
+          1
+        ]
+      },
+      {
+        "tick": 10,
+        "pause": true
+      },
+      {
+        "tick": 11,
+        "pause": false
+      },
+      {
+        "tick": 30,
+        "pause": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "paused",
+      "resumed"
+    ],
+    "end": {
+      "ticks": 60,
+      "state": "playing"
+    }
+  }
+}

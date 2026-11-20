@@ -1,0 +1,13 @@
+{
+  "requirement": "Default Night 3 (7 lanterns, wind, drifters) full run <= 21600 ticks, deterministic",
+  "night": 3,
+  "seed": 42,
+  "ticks": 21600,
+  "snapshot_every": 600,
+  "expect": {
+    "events": [
+      "night_start",
+      "shade_spawned"
+    ]
+  }
+}

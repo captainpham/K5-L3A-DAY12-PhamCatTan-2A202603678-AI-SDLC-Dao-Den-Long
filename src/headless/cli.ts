@@ -41,7 +41,7 @@ function main(): number {
     const args = parseArgs(process.argv.slice(2));
     const seed = int(args, "seed", true, -2147483648)!;
     const night = int(args, "night", true, 1)!;
-    if (night !== 1) throw new UsageError(`--night ${night} is not available (only night 1)`);
+    if (night !== 1 && night !== 2 && night !== 3) throw new UsageError(`--night must be 1, 2 or 3`);
     const ticks = int(args, "ticks", true, 0)!;
     const every = int(args, "snapshot-every", false, 1) ?? 10;
     const outPath = args.out;
@@ -49,7 +49,7 @@ function main(): number {
     const scenario = args.scenario !== undefined ? readJson(args.scenario, "scenario") : undefined;
     const inputs = args.inputs !== undefined ? readJson(args.inputs, "inputs") : undefined;
 
-    const lines = runHeadless({ seed, ticks, snapshotEvery: every, scenario, inputs });
+    const lines = runHeadless({ seed, ticks, night: night as 1 | 2 | 3, snapshotEvery: every, scenario, inputs });
     writeFileSync(outPath, lines.join("\n") + "\n", "utf8");
     return 0;
   } catch (e) {

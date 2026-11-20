@@ -1,0 +1,27 @@
+{
+  "requirement": "P1 regression: dawn when the night timer reaches 0",
+  "night": 1,
+  "seed": 1,
+  "ticks": 1000,
+  "snapshot_every": 60,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "time_left_s": 5
+  },
+  "expect": {
+    "events": [
+      "game_over"
+    ],
+    "end": {
+      "ticks": 300,
+      "state": "lost"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "requirement": "Pulse: cost 3, 3D radius 5, stun 120 ticks, push 4 m in 15 ticks, +5 per shade",
+  "night": 1,
+  "seed": 1,
+  "ticks": 200,
+  "snapshot_every": 5,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          3,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "S2",
+        "pos": [
+          -20,
+          0,
+          0
+        ]
+      }
+    ],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "carried": 5
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "pulse": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "pulse"
+    ],
+    "end": {
+      "ticks": 200,
+      "state": "playing",
+      "score": 5
+    }
+  }
+}

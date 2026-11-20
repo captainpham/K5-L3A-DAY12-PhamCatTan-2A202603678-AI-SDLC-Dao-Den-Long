@@ -14,16 +14,15 @@ function cli(args: string[]) {
 }
 
 describe("game.contract.json", () => {
-  it("declares every tuning key of contract v1.0", () => {
-    expect(contract.contract_version).toBe("1.0");
-    expect(Object.keys(contract.tuning).sort()).toEqual([
-      "carry_capacity", "fall_enabled", "flames", "hit_drop_ratio", "interact_radius", "invuln_s",
-      "lantern_cost", "lantern_count_night1", "night1_duration_s", "pickup_radius", "player_speed",
-      "pulse_cooldown_s", "pulse_cost", "pulse_push_m", "pulse_radius", "pulse_stun_s", "safe_radius",
-      "score", "shade_hit_radius", "shade_speed",
-    ]);
-    expect(Object.keys(contract.tuning.score).sort()).toEqual(["per_flame_left", "per_lantern", "per_mote", "per_second_left", "per_stun"]);
-    expect(contract.tuning.lantern_count_night1).toBe(5);
+  it("declares contract v1.1 with the Ticket-02 standard numbers", () => {
+    expect(contract.contract_version).toBe("1.1");
+    expect(contract.tuning).toEqual({
+      player_speed: 6, carry_capacity: 10, lantern_cost: 10, lantern_count_night1: 5, pickup_radius: 1, interact_radius: 2,
+      pulse_cost: 3, pulse_radius: 5, night1_duration_s: 300, night2_duration_s: 330, night3_duration_s: 360, flames: 3,
+      invuln_s: 1.5, hit_drop_ratio: 0.5, pulse_stun_s: 2, pulse_push_m: 4, pulse_cooldown_s: 3, safe_radius: 6,
+      shade_speed: 4, shade_hit_radius: 1, fall_enabled: true, dash_speed: 14, dash_duration_s: 0.2, dash_cooldown_s: 1.5,
+      score: { per_mote: 10, per_lantern: 100, per_stun: 5, per_second_left: 2, per_flame_left: 50 },
+    });
   });
 });
 
@@ -33,7 +32,7 @@ describe("headless CLI", () => {
     const r = cli(["--seed", "7", "--night", "1", "--ticks", "120", "--out", out]);
     expect(r.status).toBe(0);
     const lines = readFileSync(out, "utf8").trim().split("\n").map((l) => JSON.parse(l));
-    expect(lines[0]).toMatchObject({ type: "snapshot", tick: 0 });
+    expect(lines[0]).toMatchObject({ type: "snapshot", tick: 0, night: 1 });
     expect(lines.filter((l) => l.type === "snapshot").map((l) => l.tick)).toEqual(Array.from({ length: 13 }, (_, i) => i * 10));
     expect(lines.at(-1)).toMatchObject({ type: "end", ticks: 120, state: "playing" });
   });
@@ -59,10 +58,21 @@ describe("headless CLI", () => {
     expect(cli(["--seed", "1", "--night", "1", "--scenario", sc, "--ticks", "5", "--out", join(dir, "x.jsonl")]).status).toBe(2);
   });
 
+  it("accepts --night 1, 2, 3 and rejects 4", () => {
+    for (const n of ["1", "2", "3"]) expect(cli(["--seed", "1", "--night", n, "--ticks", "5", "--out", join(dir, `n${n}.jsonl`)]).status).toBe(0);
+    expect(readFileSync(join(dir, "n3.jsonl"), "utf8")).toMatch(/"night":3/);
+    expect(cli(["--seed", "1", "--night", "4", "--ticks", "5", "--out", join(dir, "n4.jsonl")]).status).not.toBe(0);
+  });
+
   it("missing required args -> non-zero exit", () => {
     const r = cli(["--seed", "1", "--night", "1"]);
     expect(r.status).not.toBe(0);
     expect(r.stderr).toMatch(/--ticks/);
+  });
+
+  it("headless bundle contains no rendering code (decor/animals cannot change headless output)", () => {
+    const bundle = readFileSync(CLI, "utf8");
+    expect(bundle).not.toMatch(/WebGLRenderer|InstancedMesh|makeRabbit/);
   });
 
   it("rounds coordinates to 3 decimals", () => {

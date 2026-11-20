@@ -16,11 +16,15 @@ export const snapAt = (lines: Line[], tick: number): Line => {
 };
 export const end = (lines: Line[]) => lines[lines.length - 1];
 
-/** Empty, controlled world: no random motes/shades. */
+/** Empty, controlled world: no random motes/shades/drifters, no wind. */
 export const bare = (extra: Record<string, unknown> = {}) => ({
   random_motes: false,
   random_shades: false,
+  random_drifters: false,
+  wind_enabled: false,
   motes: [],
   shades: [],
+  drifters: [],
+  charms: [],
   ...extra,
 });

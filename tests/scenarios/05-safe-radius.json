@@ -1,7 +1,0 @@
-{
-  "requirement": "Shades fear lit lanterns: never inside safe_radius of a lit lantern",
-  "seed": 1, "ticks": 900, "snapshot_every": 30,
-  "scenario": { "random_motes": false, "random_shades": false, "player": { "pos": [0, 0, 25] }, "motes": [],
-    "lanterns": [{ "id": "L1", "lit": true }], "shades": [{ "id": "S1", "pos": [0, 0, 10] }, { "id": "S2", "pos": [10, 0, 25] }] },
-  "expect": { "events": [], "end": { "ticks": 900, "state": "playing" } }
-}

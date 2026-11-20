@@ -1,0 +1,59 @@
+{
+  "requirement": "Safe zone: lighting a lantern pushes a shade inside out to 6 m within 30 ticks, no damage",
+  "night": 1,
+  "seed": 1,
+  "ticks": 60,
+  "snapshot_every": 5,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          0.5,
+          0,
+          0
+        ],
+        "state": "stunned",
+        "state_ticks_left": 1
+      }
+    ],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "carried": 10
+    },
+    "lanterns": [
+      {
+        "id": "L1",
+        "pos": [
+          0,
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "interact": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "deposit",
+      "lantern_lit"
+    ],
+    "end": {
+      "ticks": 60,
+      "state": "playing"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "requirement": "Default Night 1 (random motes/shades), idle player, seed 42: deterministic full night",
+  "night": 1,
+  "seed": 42,
+  "ticks": 18000,
+  "snapshot_every": 600,
+  "expect": {
+    "events": [
+      "night_start",
+      "shade_spawned",
+      "game_over"
+    ]
+  }
+}

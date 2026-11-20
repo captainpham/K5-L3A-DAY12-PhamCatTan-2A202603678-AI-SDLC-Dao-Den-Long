@@ -1,0 +1,67 @@
+{
+  "requirement": "P1 regression: lighting the last lantern wins (all_lit) with time + flame bonus",
+  "night": 1,
+  "seed": 1,
+  "ticks": 60,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "carried": 10
+    },
+    "lanterns": [
+      {
+        "id": "L1",
+        "pos": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "L2",
+        "lit": true
+      },
+      {
+        "id": "L3",
+        "lit": true
+      },
+      {
+        "id": "L4",
+        "lit": true
+      },
+      {
+        "id": "L5",
+        "lit": true
+      }
+    ],
+    "time_left_s": 100
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "interact": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "deposit",
+      "lantern_lit",
+      "game_over"
+    ],
+    "end": {
+      "ticks": 1,
+      "state": "won",
+      "score": 548
+    }
+  }
+}

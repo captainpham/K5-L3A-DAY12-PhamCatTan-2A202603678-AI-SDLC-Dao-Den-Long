@@ -22,7 +22,7 @@ function hasSubsequence(names, expected) {
 export function runScenario(file, outPath) {
   const spec = JSON.parse(readFileSync(file, "utf8"));
   const tmp = mkdtempSync(join(tmpdir(), "ddl-sc-"));
-  const args = [CLI, "--seed", String(spec.seed), "--night", "1", "--ticks", String(spec.ticks),
+  const args = [CLI, "--seed", String(spec.seed), "--night", String(spec.night ?? 1), "--ticks", String(spec.ticks),
     "--snapshot-every", String(spec.snapshot_every ?? 10)];
   if (spec.scenario) { const p = join(tmp, "scenario.json"); writeFileSync(p, JSON.stringify(spec.scenario)); args.push("--scenario", p); }
   if (spec.inputs) { const p = join(tmp, "inputs.json"); writeFileSync(p, JSON.stringify(spec.inputs)); args.push("--inputs", p); }
@@ -46,7 +46,8 @@ export function runScenario(file, outPath) {
   }
   const exp = spec.expect?.events ?? [];
   if (!hasSubsequence(names, exp)) problems.push(`events: expected subsequence ${exp.join(",")}, got ${names.join(",")}`);
-  if (exp.length === 0 && spec.expect?.events && names.length > 0) problems.push(`events: expected none, got ${names.join(",")}`);
+  const gameplay = names.filter((n) => n !== "night_start"); // night_start is always emitted at tick 0 (v1.1)
+  if (exp.length === 0 && spec.expect?.events && gameplay.length > 0) problems.push(`events: expected none, got ${gameplay.join(",")}`);
 
   return { name: basename(file, ".json"), requirement: spec.requirement, ok: problems.length === 0, problems, end, names, lines };
 }

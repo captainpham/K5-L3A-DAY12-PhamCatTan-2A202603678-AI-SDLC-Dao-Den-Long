@@ -1,0 +1,52 @@
+{
+  "requirement": "Fall off the island (Y < -10): -1 flame, all motes lost, respawn at start after 60 ticks",
+  "night": 1,
+  "seed": 1,
+  "ticks": 240,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "pos": [
+        0,
+        0,
+        39.5
+      ],
+      "carried": 4
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "move": [
+          0,
+          1
+        ]
+      },
+      {
+        "tick": 10,
+        "move": [
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "player_hit"
+    ],
+    "end": {
+      "ticks": 240,
+      "state": "playing"
+    }
+  }
+}

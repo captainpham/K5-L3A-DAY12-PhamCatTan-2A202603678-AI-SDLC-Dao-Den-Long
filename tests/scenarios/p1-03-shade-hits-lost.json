@@ -1,0 +1,40 @@
+{
+  "requirement": "P1 regression: shade chases at 4 m/s, hits cost flames (90 invuln ticks), no_flames loses",
+  "night": 1,
+  "seed": 1,
+  "ticks": 1200,
+  "snapshot_every": 30,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [
+      {
+        "id": "S1",
+        "pos": [
+          8,
+          0,
+          0
+        ]
+      }
+    ],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "carried": 4
+    }
+  },
+  "expect": {
+    "events": [
+      "player_hit",
+      "player_hit",
+      "player_hit",
+      "game_over"
+    ],
+    "end": {
+      "state": "lost"
+    }
+  }
+}

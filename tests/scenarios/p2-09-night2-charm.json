@@ -1,0 +1,69 @@
+{
+  "requirement": "Bùa Gió: charm_picked (600 ticks), speed 7.2 m/s, dash without cooldown",
+  "night": 2,
+  "seed": 1,
+  "ticks": 60,
+  "snapshot_every": 5,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [
+      {
+        "id": "C1"
+      }
+    ],
+    "player": {
+      "pos": [
+        35,
+        0,
+        -1
+      ]
+    }
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "move": [
+          0,
+          1
+        ]
+      },
+      {
+        "tick": 1,
+        "move": [
+          1,
+          0
+        ]
+      },
+      {
+        "tick": 10,
+        "dash": true
+      },
+      {
+        "tick": 11,
+        "dash": false
+      },
+      {
+        "tick": 30,
+        "dash": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "charm_picked",
+      "dash",
+      "dash"
+    ],
+    "end": {
+      "ticks": 60,
+      "state": "playing"
+    }
+  }
+}

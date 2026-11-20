@@ -1,0 +1,31 @@
+{
+  "requirement": "Night 2 jump pad (20,0,18): 14 m/s up + 24 m/s toward island B, lands on B after ~1.4 s",
+  "night": 2,
+  "seed": 1,
+  "ticks": 120,
+  "snapshot_every": 5,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": [],
+    "player": {
+      "pos": [
+        20,
+        0,
+        18
+      ]
+    }
+  },
+  "expect": {
+    "events": [],
+    "end": {
+      "ticks": 120,
+      "state": "playing"
+    }
+  }
+}

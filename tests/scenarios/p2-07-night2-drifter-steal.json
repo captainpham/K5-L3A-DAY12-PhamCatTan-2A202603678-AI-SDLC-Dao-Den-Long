@@ -1,0 +1,38 @@
+{
+  "requirement": "Gió Lạc: chase when carrying >= 5 within 15 m, steal min(3, carried), flee 240 ticks then vanish",
+  "night": 2,
+  "seed": 1,
+  "ticks": 400,
+  "snapshot_every": 10,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [
+      {
+        "id": "D1",
+        "pos": [
+          10,
+          0,
+          0
+        ]
+      }
+    ],
+    "charms": [],
+    "player": {
+      "carried": 6
+    }
+  },
+  "expect": {
+    "events": [
+      "drifter_steal"
+    ],
+    "end": {
+      "ticks": 400,
+      "state": "playing"
+    }
+  }
+}

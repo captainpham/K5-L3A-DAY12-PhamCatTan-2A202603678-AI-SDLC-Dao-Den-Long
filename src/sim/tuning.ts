@@ -5,27 +5,61 @@ import contract from "../../game.contract.json";
 export type Tuning = typeof contract.tuning;
 export const TUNING: Tuning = contract.tuning;
 
-/** Simulation rate fixed by Test Contract v1.0. */
+/** Simulation rate fixed by the Test Contract. */
 export const TICK_RATE = 60;
 export const DT = 1 / TICK_RATE;
 
-/** World constants that are NOT part of the contract tuning (documented in docs/notes/assumptions.md). */
-export const WORLD = {
-  islandRadius: 40,
-  lanternRingRadius: 25,
+/** Ticket-02 standard numbers that are not contract tuning keys (all in ticks unless noted). */
+export const STD = {
   jumpSpeed: 7,
   gravity: 20,
-  shadeHoverY: 1,
-  // random fireflies
-  motesInitial: 25,
-  motesMax: 30,
-  moteRespawnS: 3,
-  moteMinR: 3,
-  moteMaxR: 37,
-  // random ink shades
-  shadeFirstS: 10,
-  shadeEveryS: 20,
-  shadeMax: 4,
-  shadeSpawnR: 36,
+  pickupMaxDy: 1.5,
+  hitMaxDy: 1.5,
+  interactMaxDy: 1.5, // assumption: same height rule as pickup
+  shadeCenterY: 1, // shade.pos is its centre, 1 m above its ground
+  pulseCenterY: 0.8,
+  pulsePushTicks: 15,
+  shadeDetect: 12,
+  shadeLose: 18,
+  shadeWanderSpeed: 1.5, // assumption
+  shadeWanderTurnTicks: 120, // assumption
+  shadeSpawningTicks: 60, // assumption: length of the "spawning" state
+  shadeFirstTick: 300,
+  shadeFirstCount: 2,
   shadeMinDistToPlayer: 15,
+  recoilTicks: 60,
+  recoilDist: 2,
+  expelTicks: 30,
+  moteMax: 30,
+  moteInitial: 20,
+  moteEveryTicks: 240,
+  dropRingMin: 1.5,
+  dropRingMax: 2.5,
+  dropTtl: 480,
+  fallY: -10,
+  fallWaitTicks: 60,
+  charmTicks: 600,
+  charmRespawnTicks: 2700,
+  charmSpeed: 7.2,
+  drifterSpeed: 7,
+  drifterIdleSpeed: 2,
+  drifterMax: 2,
+  drifterEveryTicks: 1200,
+  drifterChaseCarried: 5,
+  drifterChaseDist: 15,
+  drifterTouch: 1.2,
+  drifterSteal: 3,
+  drifterFleeTicks: 240,
+  drifterDropFleeTicks: 120,
+  drifterHoverY: 1.5,
+  windEveryTicks: 1800,
+  windTicks: 300,
+  windWarnTicks: 120,
+  windSpeed: 2,
+  stepUp: 0.35, // max height the feet can step up/down without jumping/falling (ramps)
+  towerTop: 14,
 } as const;
+
+export function nightDurationS(night: 1 | 2 | 3): number {
+  return night === 1 ? TUNING.night1_duration_s : night === 2 ? TUNING.night2_duration_s : TUNING.night3_duration_s;
+}

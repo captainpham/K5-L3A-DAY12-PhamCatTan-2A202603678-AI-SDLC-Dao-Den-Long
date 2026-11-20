@@ -1,0 +1,24 @@
+{
+  "requirement": "Night 3 wind: gust at 30 s lasting 5 s pushes Mây at 2 m/s",
+  "night": 3,
+  "seed": 7,
+  "ticks": 2160,
+  "snapshot_every": 60,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": true,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": []
+  },
+  "expect": {
+    "events": [],
+    "end": {
+      "ticks": 2160,
+      "state": "playing"
+    }
+  }
+}

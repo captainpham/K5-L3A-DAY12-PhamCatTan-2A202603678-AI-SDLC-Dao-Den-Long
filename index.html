@@ -5,39 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Đảo Đèn Lồng</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; background: #0a1030; color: #f5f1e6;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    /* Ticket-02 palette: UI text #F5F1E6, danger #FF5A5F, gold/score #F2C14E, lantern #FFB347, sky #0E1430, fog #1B2350 */
+    :root { --text: #f5f1e6; --danger: #ff5a5f; --gold: #f2c14e; --lantern: #ffb347; --sky: #0e1430; --fog: #1b2350; --mote: #ffe58a; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sky); color: var(--text);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
     #app { position: fixed; inset: 0; }
-    #hud { position: fixed; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px;
-      pointer-events: none; font-size: 15px; }
-    .pill { background: rgba(11,16,40,.72); border: 1px solid #2a3360; border-radius: 999px; padding: 5px 12px; }
-    .pill b { color: #ffb347; }
-    #hint { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: rgba(11,16,40,.8);
-      border: 1px solid #ffb347; border-radius: 10px; padding: 6px 14px; display: none; }
-    #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,12,30,.62); }
-    #overlay .card { max-width: 460px; margin: 16px; background: #151c3d; border: 1px solid #2a3360; border-radius: 14px;
-      padding: 22px 26px; text-align: center; }
-    #overlay h1 { margin: 0 0 6px; color: #ffb347; }
-    #overlay p { margin: 6px 0; color: #aeb3cc; line-height: 1.55; }
-    #overlay kbd { background: #1b2350; border: 1px solid #2a3360; border-radius: 4px; padding: 0 6px; color: #ffe9b0; }
-    #overlay button { margin-top: 12px; background: #ffb347; color: #1a1206; border: 0; border-radius: 10px;
-      padding: 10px 20px; font-weight: 700; font-size: 15px; cursor: pointer; }
+    .hud { position: fixed; pointer-events: none; text-shadow: 0 1px 3px #000a; }
+    #flames { top: 14px; left: 16px; font-size: 26px; letter-spacing: 4px; }
+    #clock { top: 10px; left: 50%; transform: translateX(-50%); font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    #clock.danger { color: var(--danger); animation: blink 1s steps(2) infinite; }
+    @keyframes blink { 50% { opacity: .35; } }
+    #topright { top: 12px; right: 16px; text-align: right; font-size: 18px; line-height: 1.5; }
+    #topright b { color: var(--gold); }
+    #bar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
+    #bar i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ffe58a55; background: #0005; display: block; }
+    #bar i.on { background: radial-gradient(circle, #fff6c2 0 35%, var(--mote) 60%, #ffe58a00 75%); border-color: var(--mote); }
+    #cds { bottom: 16px; right: 18px; display: flex; gap: 12px; }
+    .cd { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+      background: conic-gradient(#0009 var(--p, 0%), #ffb34755 0); border: 2px solid var(--lantern); }
+    .cd small { display: block; font-weight: 400; font-size: 10px; text-align: center; }
+    #hint { bottom: 64px; left: 50%; transform: translateX(-50%); background: #0e1430cc; border: 1px solid var(--lantern);
+      border-radius: 10px; padding: 6px 14px; display: none; font-size: 16px; }
+    #arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid var(--lantern);
+      display: none; filter: drop-shadow(0 0 6px #ffb347); }
+    #wind { top: 56px; left: 50%; transform: translateX(-50%); color: #cfe6b0; font-size: 15px; display: none; }
+    #fps { bottom: 6px; left: 8px; font: 12px monospace; opacity: .7; }
+    #charmhud { top: 52px; left: 16px; font-size: 14px; color: var(--gold); display: none; }
+    #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: #0e1430b8; }
+    #overlay.hidden { display: none; }
+    .card { max-width: 480px; margin: 16px; background: var(--fog); border: 1px solid #2a3360; border-radius: 14px; padding: 22px 26px; text-align: center; }
+    .card h1 { margin: 0 0 6px; color: var(--lantern); font-size: 30px; }
+    .card h2 { margin: 0 0 8px; color: var(--gold); font-size: 20px; }
+    .card p { margin: 8px 0; color: #cfd2e6; line-height: 1.55; }
+    .card .quote { font-style: italic; color: var(--text); border-left: 3px solid var(--lantern); text-align: left; padding: 4px 12px; }
+    .card kbd { background: #0e1430; border: 1px solid #2a3360; border-radius: 4px; padding: 0 6px; color: #ffe9b0; }
+    .card button { margin: 8px 4px 0; background: var(--lantern); color: #1a1206; border: 0; border-radius: 10px; padding: 10px 18px;
+      font-weight: 700; font-size: 15px; cursor: pointer; }
+    .card button.ghost { background: transparent; color: var(--text); border: 1px solid #2a3360; }
+    .card label { display: block; text-align: left; margin: 12px 0 2px; }
+    .card input[type=range] { width: 100%; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div id="app"></div>
-  <div id="hud"></div>
-  <div id="hint"></div>
-  <div id="overlay">
-    <div class="card">
-      <h1 id="ov-title">Đảo Đèn Lồng</h1>
-      <p id="ov-text">Đêm 1 – Đảo Bến. Sương đen đã nuốt ánh sáng của đảo. Giúp Mây gom đom đóm và thắp lại 5 Đèn Lồng Lớn.</p>
-      <p><kbd>W A S D</kbd> di chuyển · <kbd>Space</kbd> nhảy · <kbd>E</kbd> nạp đèn · <kbd>F</kbd> tỏa sáng<br />
-        Kéo chuột hoặc <kbd>←</kbd> <kbd>→</kbd> xoay camera · <kbd>R</kbd> chơi lại</p>
-      <button id="ov-btn">Bắt đầu</button>
+  <div id="hudroot" class="hidden">
+    <div id="flames" class="hud"></div>
+    <div id="charmhud" class="hud"></div>
+    <div id="clock" class="hud"></div>
+    <div id="topright" class="hud"></div>
+    <div id="wind" class="hud">🍃 Gió sắp nổi…</div>
+    <div id="bar" class="hud"></div>
+    <div id="cds" class="hud">
+      <div class="cd" id="cd-dash"><span>Shift<small>Lướt</small></span></div>
+      <div class="cd" id="cd-pulse"><span>F<small>Tỏa sáng</small></span></div>
     </div>
+    <div id="hint" class="hud"></div>
+    <div id="arrow" class="hud"></div>
   </div>
+  <div id="fps" class="hud"></div>
+  <div id="overlay"><div class="card" id="card"></div></div>
   <script type="module" src="/src/game/main.ts"></script>
 </body>
 </html>

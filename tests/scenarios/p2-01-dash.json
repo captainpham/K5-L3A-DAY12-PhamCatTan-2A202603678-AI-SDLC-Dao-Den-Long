@@ -1,0 +1,51 @@
+{
+  "requirement": "Dash: 14 m/s x 0.2 s, cooldown 1.5 s from start (press at tick 60 ignored, tick 90 works)",
+  "night": 1,
+  "seed": 1,
+  "ticks": 120,
+  "snapshot_every": 6,
+  "scenario": {
+    "random_motes": false,
+    "random_shades": false,
+    "random_drifters": false,
+    "wind_enabled": false,
+    "motes": [],
+    "shades": [],
+    "drifters": [],
+    "charms": []
+  },
+  "inputs": {
+    "frames": [
+      {
+        "tick": 0,
+        "dash": true
+      },
+      {
+        "tick": 1,
+        "dash": false
+      },
+      {
+        "tick": 60,
+        "dash": true
+      },
+      {
+        "tick": 61,
+        "dash": false
+      },
+      {
+        "tick": 90,
+        "dash": true
+      }
+    ]
+  },
+  "expect": {
+    "events": [
+      "dash",
+      "dash"
+    ],
+    "end": {
+      "ticks": 120,
+      "state": "playing"
+    }
+  }
+}

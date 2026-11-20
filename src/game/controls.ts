@@ -3,17 +3,19 @@ import type { InputState } from "../sim/types";
 
 export class Controls {
   camYawDeg = 0;
+  sensitivity = 1;
   private held = new Set<string>();
   private latched = new Set<string>();
   private dragging = false;
   private lastX = 0;
-  onRestart: () => void = () => {};
+  /** called on Esc / P (pause menu) */
+  onPause: () => void = () => {};
 
   constructor(el: HTMLElement) {
     addEventListener("keydown", (e) => {
       const k = e.code;
-      if (k === "Space") e.preventDefault();
-      if (k === "KeyR") this.onRestart();
+      if (k === "Space" || k.startsWith("Arrow")) e.preventDefault();
+      if ((k === "Escape" || k === "KeyP") && !e.repeat) this.onPause();
       if (!this.held.has(k)) this.latched.add(k);
       this.held.add(k);
     });
@@ -23,26 +25,25 @@ export class Controls {
     addEventListener("pointerup", () => (this.dragging = false));
     addEventListener("pointermove", (e) => {
       if (!this.dragging) return;
-      this.camYawDeg -= (e.clientX - this.lastX) * 0.3;
+      this.camYawDeg -= (e.clientX - this.lastX) * 0.3 * this.sensitivity;
       this.lastX = e.clientX;
     });
+  }
+
+  /** Forget pending taps (e.g. the key press that closed a menu must not trigger an action). */
+  reset(): void {
+    this.latched.clear();
+    this.held.clear();
   }
 
   private on(...codes: string[]): boolean {
     return codes.some((c) => this.held.has(c) || this.latched.has(c));
   }
 
-  /** Forget pending taps (e.g. the Space press that started the game must not make Mây jump). */
-  reset(): void {
-    this.latched.clear();
-    this.held.clear();
-  }
-
-  /** Called once per simulation tick. */
+  /** Called once per simulation tick. Camera: right of screen is move x = -1 (contract rotation). */
   sample(dt: number): InputState {
-    if (this.held.has("ArrowLeft")) this.camYawDeg += 120 * dt;
-    if (this.held.has("ArrowRight")) this.camYawDeg -= 120 * dt;
-    // Camera looks along (sin yaw, cos yaw); with the contract's rotation, screen-right is move x = -1.
+    if (this.held.has("ArrowLeft")) this.camYawDeg += 120 * dt * this.sensitivity;
+    if (this.held.has("ArrowRight")) this.camYawDeg -= 120 * dt * this.sensitivity;
     const z = (this.on("KeyW", "ArrowUp") ? 1 : 0) - (this.on("KeyS", "ArrowDown") ? 1 : 0);
     const x = (this.on("KeyA") ? 1 : 0) - (this.on("KeyD") ? 1 : 0);
     const input: InputState = {
@@ -51,7 +52,8 @@ export class Controls {
       jump: this.on("Space"),
       interact: this.on("KeyE"),
       pulse: this.on("KeyF"),
-      dash: false,
+      dash: this.on("ShiftLeft", "ShiftRight"),
+      pause: false,
     };
     this.latched.clear();
     return input;
