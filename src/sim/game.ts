@@ -62,6 +62,10 @@ export class Game {
    *  Headless never sets it, so the contract output is unchanged. */
   extraSolids: { x: number; z: number; r: number }[] = [];
 
+  /** Ticket-04 benchmark scene: no spawning, no damage, no pickup, no fuel burn, no end of night (shades still wander).
+   *  Only the bench page sets it; headless and the normal game never do. */
+  bench = false;
+
   events: TickEvent[] = [];
   private prev: InputState = { move: [0, 0], camYawDeg: 0, jump: false, interact: false, pulse: false, dash: false, pause: false };
 
@@ -195,7 +199,7 @@ export class Game {
       this.windDirDeg = Math.floor(this.rng() * 360);
     }
     // lantern fuel (Ticket-03): own decay + every draining shade, in integer 1/60 units
-    for (const l of this.lanterns) if (l.lit) l.fuelU -= t.fuel_decay_per_s;
+    if (!this.bench) for (const l of this.lanterns) if (l.lit) l.fuelU -= t.fuel_decay_per_s;
     for (const s of [...this.shades].sort(byId)) {
       if (s.state !== "drain") continue;
       const l = this.lanterns.find((x) => x.id === s.targetLanternId);
@@ -217,7 +221,7 @@ export class Game {
     this.movePlayer(input, rise("jump"), rise("dash"));
 
     // 4. pickup (not while waiting to respawn)
-    if (this.playerActive) {
+    if (this.playerActive && !this.bench) {
       const keep: Mote[] = [];
       for (const m of this.motes) {
         if (p.carried < this.capacity && this.simTick >= m.pickableFrom &&
@@ -318,7 +322,7 @@ export class Game {
     this.moveDrifters();
 
     // 9. touch: drifters steal first, then shade hits (by id, max one flame per tick)
-    if (this.playerActive) {
+    if (this.playerActive && !this.bench) {
       for (const d of [...this.drifters].sort(byId)) {
         if ((d.state === "idle" || d.state === "chase") && p.carried > 0 && distXZ(d.x, d.z, p.x, p.z) <= STD.drifterTouch) {
           const amount = Math.min(STD.drifterSteal, p.carried);
@@ -350,6 +354,7 @@ export class Game {
     }
 
     // 10. spawns (new entities interact from the next tick)
+    if (this.bench) return; // bench: no spawning and no end of night
     if (this.randomMotes && this.simTick % STD.moteEveryTicks === 0 && this.motes.length < STD.moteMax) this.spawnRandomMote();
     if (this.randomShades) {
       const n = this.simTick === STD.shadeFirstTick ? STD.shadeFirstCount

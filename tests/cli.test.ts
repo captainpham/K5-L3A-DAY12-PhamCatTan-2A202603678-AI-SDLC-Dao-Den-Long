@@ -15,8 +15,9 @@ function cli(args: string[]) {
 
 describe("game.contract.json", () => {
   // Ticket-03 [REPLACED] v1.1 -> v1.2: new fuel keys, shorter nights, new score (no time bonus)
-  it("declares contract v1.2 with the Ticket-02/03 standard numbers", () => {
-    expect(contract.contract_version).toBe("1.2");
+  // Ticket-04 [REPLACED] contract_version 1.2 -> 1.3 (adds bench_cmd/soak_cmd; every tuning number is unchanged)
+  it("declares contract v1.3 and keeps every Ticket-02/03 standard number", () => {
+    expect(contract.contract_version).toBe("1.3");
     expect(contract.tuning).toEqual({
       player_speed: 6, carry_capacity: 10, lantern_cost: 10, lantern_count_night1: 5, pickup_radius: 1, interact_radius: 2,
       pulse_cost: 3, pulse_radius: 5, night1_duration_s: 240, night2_duration_s: 270, night3_duration_s: 300, flames: 3,

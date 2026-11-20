@@ -1,10 +1,16 @@
 # Changelog
 
-## Unreleased (sáng tạo, sau tag phase-3)
-- Chế độ "Đảo lớn (khám phá)" ở menu: bản đồ x2, đảo bờ lồi lõm, núi 25–45 m là địa hình thật trong chế độ này. Không đổi bản đồ chuẩn, headless, Test Contract.
-- Đồi cát, hồ (three.js `Water`), sông, thác trên đảo (độ cao hiển thị ở bản đồ chuẩn).
-- Bản chơi: không đi xuyên cây, đá lớn, cột Đèn Lồng; thêm cỏ, hoa, cây (có giới hạn để giữ FPS).
-- Dãy núi xa ngoài biển (Phase 3) bị bỏ.
+## v1.0.0 / Phase 4 — Ticket-04 "Bình minh" (Test Contract v1.3)
+- **Contract v1.3:** `game.contract.json` thêm `bench_cmd` và `soak_cmd`; mọi số liệu và định dạng v1.0–v1.2 giữ nguyên.
+- **Benchmark:** `node dist/bench.cjs --seed 42 --duration 30 --out bench.json`, cảnh chuẩn 200 Bóng Mực + 100 đom đóm, cửa sổ Chrome 1280×720, vsync tắt (`src/tools/bench.ts`, `src/sim/bench.ts`). Bóng Mực và đom đóm vẽ bằng InstancedMesh.
+- **Soak:** `node --expose-gc dist/soak.cjs --seed 7 --nights 10 --out soak.json` (`src/tools/soak.ts`).
+- **Bảng xếp hạng cục bộ:** nhập tên sau Bình Minh hoặc khi thua, top 10, lưu trên đĩa, màn hình ở menu, `--export-leaderboard`.
+- **Dễ tiếp cận:** đổi phím (báo trùng, khôi phục mặc định, được lưu), phụ đề + mũi tên chỉ hướng, giảm chuyển động, chữ ≥ 18 px và chữ lớn ×1.25.
+- **Đóng gói:** `npm start` chạy server cục bộ (`dist/serve.cjs`); `npm run release` đóng gói `dao-den-long-v1.0.0.tar.gz` (web tĩnh + server + headless); GitHub Release v1.0.0.
+- **Thay đổi nhỏ có thể thấy:** `run_cmd` đổi từ `npm start` (vite preview) sang `node dist/serve.cjs`; `puppeteer` là phụ thuộc tuỳ chọn (chỉ bench cần).
+- **Sáng tạo (sau tag phase-3):** chế độ "Đảo lớn (khám phá)" (x2, bờ lồi lõm, núi 25–45 m), đồi cát, hồ, sông rộng, thác; không đi xuyên cây, đá lớn, cột đèn; thêm cỏ hoa cây. Không đổi bản đồ chuẩn, headless, Test Contract. Dãy núi xa ngoài biển (Phase 3) bị bỏ.
+- **Test:** thêm `tests/release.test.ts` (bảng xếp hạng, thống kê và cảnh bench, soak, đổi phím) và `tests/explore.test.ts`; test `contract v1.2` sửa thành v1.3 (dòng `Ticket-04 [REPLACED]`).
+
 
 ## Phase 3 — Ticket-03 "Đèn cạn dầu" (Test Contract v1.2)
 

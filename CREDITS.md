@@ -6,4 +6,5 @@
 - Âm thanh: tự tổng hợp bằng WebAudio trong code (`src/game/audio.ts`), không dùng file âm thanh.
 - Lời thoại Ông Đăng, tên đảo, Gió Lạc, Bùa Gió: theo Ticket-02 của lab; câu thoại do tôi viết.
 - Thư viện: [three.js](https://threejs.org) (MIT), Vite (MIT), Vitest (MIT), esbuild (MIT), TypeScript (Apache-2.0).
+- Công cụ đo (tuỳ chọn): [Puppeteer](https://pptr.dev) (Apache-2.0) điều khiển Chrome cho lệnh bench; Chrome/Chromium theo giấy phép của Google.
 - Công cụ AI tạo code: Claude Code (Anthropic), xem `docs/notes/ai-log.md`.

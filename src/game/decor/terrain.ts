@@ -7,10 +7,10 @@ const mat = (color: number, extra: THREE.MeshStandardMaterialParameters = {}) =>
   new THREE.MeshStandardMaterial({ color, roughness: 1, flatShading: true, ...extra });
 
 /** Round island: flat grass top at Y=0, sand rim (last 2 m), rocky cliff down into the cloud sea. */
-function roundIsland(R: number, cx: number, cz: number): THREE.Mesh {
+function roundIsland(R: number, cx: number, cz: number, withTop = false): THREE.Mesh {
   // the top is drawn by Landscape (hills, lake, river); the lathe keeps only the rim band and the cliffs
   const profile = [
-    new THREE.Vector2(R - 2, 0), new THREE.Vector2(R, 0),
+    ...(withTop ? [new THREE.Vector2(0.01, 0)] : []), new THREE.Vector2(R - 2, 0), new THREE.Vector2(R, 0),
     new THREE.Vector2(R + 0.6, -1.5), new THREE.Vector2(R * 0.85, -9), new THREE.Vector2(R * 0.4, -18),
   ];
   const geo = new THREE.LatheGeometry(profile, 96);
@@ -79,13 +79,14 @@ function irregularIsland(cx: number, cz: number, coast: (a: number) => number): 
   return m;
 }
 
-export function buildTerrain(map: NightMap): THREE.Group {
+/** withTop: draw the flat grass top too (benchmark scene, where the creative Landscape is off) */
+export function buildTerrain(map: NightMap, withTop = false): THREE.Group {
   const g = new THREE.Group();
   const S = map.scale ?? 1; // explore maps are scaled x2
   if (map.isles) for (const is of map.isles) g.add(irregularIsland(is.cx, is.cz, is.coast));
-  else if (map.night === 1) g.add(roundIsland(40, 0, 0));
-  else if (map.night === 2) g.add(roundIsland(28, 0, 0), roundIsland(28, 70, 0));
-  else g.add(roundIsland(45, 0, 0));
+  else if (map.night === 1) g.add(roundIsland(40, 0, 0, withTop));
+  else if (map.night === 2) g.add(roundIsland(28, 0, 0, withTop), roundIsland(28, 70, 0, withTop));
+  else g.add(roundIsland(45, 0, 0, withTop));
   if (map.night === 2) {
     // bamboo bridge x in [26, 44], z in [-2, 2] (x S), no railing
     const bridge = new THREE.Group();

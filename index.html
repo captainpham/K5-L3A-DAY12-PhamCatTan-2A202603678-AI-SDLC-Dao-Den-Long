@@ -5,67 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Đảo Đèn Lồng</title>
   <style>
-    /* Ticket-02 palette: UI text #F5F1E6, danger #FF5A5F, gold/score #F2C14E, lantern #FFB347, sky #0E1430, fog #1B2350 */
-    :root { --text: #f5f1e6; --danger: #ff5a5f; --gold: #f2c14e; --lantern: #ffb347; --sky: #0e1430; --fog: #1b2350; --mote: #ffe58a; }
+    /* Ticket-02 palette: UI text #F5F1E6, danger #FF5A5F, gold/score #F2C14E, lantern #FFB347, sky #0E1430, fog #1B2350
+       Ticket-04: every UI text >= 18 px at 1280x720 (1rem = 18px); "Chữ lớn" scales everything by 1.25 */
+    :root { --text: #f5f1e6; --danger: #ff5a5f; --gold: #f2c14e; --lantern: #ffb347; --sky: #0e1430; --fog: #1b2350; --mote: #ffe58a; --shade: #7a3cff;
+      font-size: 18px; }
+    html.large { font-size: 22.5px; }
     html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sky); color: var(--text);
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; user-select: none; font-size: 1rem; }
     #app { position: fixed; inset: 0; }
-    .hud { position: fixed; pointer-events: none; text-shadow: 0 1px 3px #000a; }
-    #flames { top: 14px; left: 16px; font-size: 26px; letter-spacing: 4px; }
-    #clock { top: 10px; left: 50%; transform: translateX(-50%); font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .hud { position: fixed; pointer-events: none; text-shadow: 0 1px 3px #000c; font-size: 1rem; }
+    #flames { top: 12px; left: 16px; font-size: 1.6rem; letter-spacing: 4px; }
+    #clock { top: 8px; left: 50%; transform: translateX(-50%); font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
     #clock.danger { color: var(--danger); animation: blink 1s steps(2) infinite; }
+    body.calm #clock.danger { animation: none; }
     @keyframes blink { 50% { opacity: .35; } }
-    #topright { top: 12px; right: 16px; text-align: right; font-size: 18px; line-height: 1.5; }
+    #topright { top: 10px; right: 16px; text-align: right; font-size: 1.1rem; line-height: 1.5; }
     #topright b { color: var(--gold); }
-    #bar { bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
-    #bar::after { content: attr(data-label); margin-left: 8px; font-weight: 700; color: var(--mote); }
-    .need { color: var(--danger); font-size: 14px; }
-    /* Ticket-03 colour-blind palette: UI danger becomes white (with a ⚠ icon added in the text) */
-    body.cb { --danger: #ffffff; }
-    #bar i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ffe58a55; background: #0005; display: block; }
+    .need { color: var(--danger); }
+    #bar { bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; align-items: center; }
+    #bar::after { content: attr(data-label); margin-left: 8px; font-weight: 700; color: var(--mote); font-size: 1rem; }
+    #bar i { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid #ffe58a55; background: #0005; display: block; }
     #bar i.on { background: radial-gradient(circle, #fff6c2 0 35%, var(--mote) 60%, #ffe58a00 75%); border-color: var(--mote); }
-    #cds { bottom: 16px; right: 18px; display: flex; gap: 12px; }
-    .cd { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
-      background: conic-gradient(#0009 var(--p, 0%), #ffb34755 0); border: 2px solid var(--lantern); }
-    .cd small { display: block; font-weight: 400; font-size: 10px; text-align: center; }
+    #cds { bottom: 12px; right: 16px; display: flex; gap: 14px; }
+    .cd { width: 4.4rem; text-align: center; font-size: 1rem; }
+    .cd .ring { width: 3.2rem; height: 3.2rem; margin: 0 auto 2px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+      background: conic-gradient(#000b var(--p, 0%), #ffb34766 0); border: 2px solid var(--lantern); font-size: 1rem; }
     #hint { bottom: 64px; left: 50%; transform: translateX(-50%); background: #0e1430cc; border: 1px solid var(--lantern);
-      border-radius: 10px; padding: 6px 14px; display: none; font-size: 16px; }
-    #arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid var(--lantern);
+      border-radius: 10px; padding: 6px 14px; display: none; font-size: 1.1rem; }
+    #captions { bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    #captions div { background: #000c; border-radius: 8px; padding: 4px 14px; font-size: 1.1rem; }
+    #captions div.danger { color: var(--danger); border: 1px solid var(--danger); }
+    .arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid var(--lantern);
       display: none; filter: drop-shadow(0 0 6px #ffb347); }
-    #wind { top: 56px; left: 50%; transform: translateX(-50%); color: #cfe6b0; font-size: 15px; display: none; }
-    #fps { bottom: 6px; left: 8px; font: 12px monospace; opacity: .7; }
-    #charmhud { top: 52px; left: 16px; font-size: 14px; color: var(--gold); display: none; }
-    #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: #0e1430b8; }
+    .arrow.shade { border-bottom-color: var(--shade); filter: drop-shadow(0 0 6px var(--shade)); }
+    body.cb .arrow.shade { border-bottom-color: #00b3ff; }
+    #wind { top: 3.4rem; left: 50%; transform: translateX(-50%); color: #cfe6b0; font-size: 1.1rem; display: none; }
+    #fps { bottom: 6px; left: 8px; font: 1rem monospace; opacity: .75; }
+    #charmhud { top: 3.4rem; left: 16px; color: var(--gold); display: none; }
+    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s; }
+    #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: #0e1430b8; overflow-y: auto; }
     #overlay.hidden { display: none; }
-    .card { max-width: 480px; margin: 16px; background: var(--fog); border: 1px solid #2a3360; border-radius: 14px; padding: 22px 26px; text-align: center; }
-    .card h1 { margin: 0 0 6px; color: var(--lantern); font-size: 30px; }
-    .card h2 { margin: 0 0 8px; color: var(--gold); font-size: 20px; }
-    .card p { margin: 8px 0; color: #cfd2e6; line-height: 1.55; }
+    .card { max-width: 620px; margin: 16px; background: var(--fog); border: 1px solid #2a3360; border-radius: 14px; padding: 22px 26px; text-align: center; }
+    .card h1 { margin: 0 0 6px; color: var(--lantern); font-size: 1.8rem; }
+    .card h2 { margin: 0 0 8px; color: var(--gold); font-size: 1.2rem; }
+    .card p { margin: 8px 0; color: #dfe1ee; line-height: 1.5; font-size: 1rem; }
     .card .quote { font-style: italic; color: var(--text); border-left: 3px solid var(--lantern); text-align: left; padding: 4px 12px; }
-    .card kbd { background: #0e1430; border: 1px solid #2a3360; border-radius: 4px; padding: 0 6px; color: #ffe9b0; }
+    .card kbd { background: #0e1430; border: 1px solid #2a3360; border-radius: 4px; padding: 0 6px; color: #ffe9b0; font-size: 1rem; }
     .card button { margin: 8px 4px 0; background: var(--lantern); color: #1a1206; border: 0; border-radius: 10px; padding: 10px 18px;
-      font-weight: 700; font-size: 15px; cursor: pointer; }
-    .card button.ghost { background: transparent; color: var(--text); border: 1px solid #2a3360; }
-    .card label { display: block; text-align: left; margin: 12px 0 2px; }
+      font-weight: 700; font-size: 1rem; cursor: pointer; }
+    .card button.ghost { background: transparent; color: var(--text); border: 1px solid #3a4580; }
+    .card label { display: block; text-align: left; margin: 10px 0 2px; font-size: 1rem; }
     .card input[type=range] { width: 100%; }
+    .card input[type=text] { font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; border: 1px solid #3a4580; background: #0e1430; color: var(--text); width: 14rem; }
+    .card table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+    .card td, .card th { padding: 4px 8px; border-bottom: 1px solid #2a3360; text-align: left; }
+    .keys { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; text-align: left; align-items: center; }
+    .keys button { margin: 0; min-width: 8rem; }
+    .keys button.dup { background: var(--danger); color: #000; }
+    .warn { color: var(--danger); font-weight: 700; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div id="app"></div>
+  <div id="flash"></div>
   <div id="hudroot" class="hidden">
     <div id="flames" class="hud"></div>
     <div id="charmhud" class="hud"></div>
     <div id="clock" class="hud"></div>
     <div id="topright" class="hud"></div>
     <div id="wind" class="hud">🍃 Gió sắp nổi…</div>
+    <div id="captions" class="hud"></div>
     <div id="bar" class="hud"></div>
     <div id="cds" class="hud">
-      <div class="cd" id="cd-dash"><span>Shift<small>Lướt</small></span></div>
-      <div class="cd" id="cd-pulse"><span>F<small>Tỏa sáng</small></span></div>
+      <div class="cd" id="cd-dash"><div class="ring" id="k-dash">⇧</div>Lướt</div>
+      <div class="cd" id="cd-pulse"><div class="ring" id="k-pulse">F</div>Tỏa sáng</div>
     </div>
     <div id="hint" class="hud"></div>
-    <div id="arrow" class="hud"></div>
+    <div id="arrow" class="hud arrow"></div>
+    <div id="shadearrows"></div>
   </div>
   <div id="fps" class="hud"></div>
   <div id="overlay"><div class="card" id="card"></div></div>

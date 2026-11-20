@@ -1,23 +1,53 @@
-// Three.js view of a Game. Reads simulation state every frame; never writes to it.
+// Three.js view of a Game. Reads simulation state every frame; never writes to it (except game.extraSolids at load).
+// Shades and fireflies are drawn with InstancedMesh (a few draw calls even for the 200-shade benchmark scene).
 import * as THREE from "three";
 import type { Game } from "../sim/game";
 import { STD } from "../sim/tuning";
-import { PALETTE, PALETTE_CB, makeBigLantern, makeCharm, makeDrifter, makeMay, makeMote, makeShade } from "./models";
+import { PALETTE, PALETTE_CB, makeBigLantern, makeCharm, makeDrifter, makeMay } from "./models";
 import { Landscape } from "./decor/landscape";
 import { Environment } from "./decor/environment";
 import { Vegetation } from "./decor/vegetation";
 import { Fauna } from "./decor/fauna";
 import { buildTerrain } from "./decor/terrain";
 
+export interface LoadOptions {
+  /** creative decor (hills, lake, river, plants, animals). Off in the benchmark scene (Ticket-04). */
+  decor: boolean;
+}
+
+/** Growable InstancedMesh holder */
+class Pool {
+  mesh: THREE.InstancedMesh;
+  constructor(private geo: THREE.BufferGeometry, private mat: THREE.Material, private parent: THREE.Object3D, cap = 64) {
+    this.mesh = this.make(cap);
+  }
+  private make(cap: number): THREE.InstancedMesh {
+    const m = new THREE.InstancedMesh(this.geo, this.mat, cap);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    m.frustumCulled = false;
+    m.count = 0;
+    this.parent.add(m);
+    return m;
+  }
+  ensure(n: number): void {
+    if (n <= this.mesh.instanceMatrix.count) return;
+    this.parent.remove(this.mesh);
+    this.mesh.dispose();
+    this.mesh = this.make(Math.max(n, this.mesh.instanceMatrix.count * 2));
+  }
+}
+
 export class View {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 900);
   readonly quality: "high" | "low";
+  /** Ticket-03 colour-blind palette */
+  colorblind = false;
+  /** Ticket-04 accessibility: no camera shake, no screen flash */
+  reduceMotion = false;
   private moon!: THREE.DirectionalLight;
   private fogBase = 0.012;
-  /** Ticket-03 colour-blind palette setting */
-  colorblind = false;
   private land: Landscape | null = null;
   /** visual height of the landscape at (x, z): 0 where the rules need flat ground */
   private h = (x: number, z: number) => (this.land ? this.land.height(x, z) : 0);
@@ -29,13 +59,17 @@ export class View {
   private fauna: Fauna | null = null;
   private lanterns: ReturnType<typeof makeBigLantern>[] = [];
   private charms: THREE.Group[] = [];
-  private shades = new Map<string, ReturnType<typeof makeShade>>();
-  private motes = new Map<string, THREE.Group>();
   private drifters = new Map<string, ReturnType<typeof makeDrifter>>();
   private pulseRing: THREE.Mesh;
   private pulseT = 1;
   private leaves: THREE.Points;
   private leafPos: Float32Array;
+  private shakeT = 0;
+  // instanced actors
+  private shadeBody: Pool; private shadeRim: Pool; private shadeEyes: Pool;
+  private moteCore: Pool; private moteHalo: Pool;
+  private rimMat: THREE.MeshBasicMaterial; private eyeMat: THREE.MeshBasicMaterial;
+  private tmp = new THREE.Object3D(); private tmpM = new THREE.Matrix4(); private col = new THREE.Color();
 
   constructor(container: HTMLElement) {
     this.quality = new URLSearchParams(location.search).get("quality") === "low" ? "low" : "high";
@@ -59,6 +93,16 @@ export class View {
     sc.left = sc.bottom = -60; sc.right = sc.top = 60; sc.far = 300; // follows Mây (see render)
     this.scene.add(moon, moon.target, this.world, this.may.root);
 
+    // instanced shades: ink body (stunned tint per instance), violet rim, glowing eyes
+    this.shadeBody = new Pool(new THREE.IcosahedronGeometry(0.7, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, flatShading: true }), this.scene);
+    this.rimMat = new THREE.MeshBasicMaterial({ color: PALETTE.shadeRim, side: THREE.BackSide, transparent: true, opacity: 0.85 });
+    this.shadeRim = new Pool(new THREE.IcosahedronGeometry(0.78, 1), this.rimMat, this.scene);
+    this.eyeMat = new THREE.MeshBasicMaterial({ color: 0xc9a7ff });
+    this.shadeEyes = new Pool(new THREE.SphereGeometry(0.08, 6, 4), this.eyeMat, this.scene, 128);
+    // instanced fireflies: bright core + soft halo
+    this.moteCore = new Pool(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: PALETTE.moteCore }), this.scene);
+    this.moteHalo = new Pool(new THREE.SphereGeometry(0.28, 10, 8), new THREE.MeshBasicMaterial({ color: PALETTE.moteHalo, transparent: true, opacity: 0.35, depthWrite: false }), this.scene);
+
     this.pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48),
       new THREE.MeshBasicMaterial({ color: PALETTE.lanternCore, transparent: true, opacity: 0, side: THREE.DoubleSide }));
     this.pulseRing.rotation.x = -Math.PI / 2;
@@ -79,8 +123,16 @@ export class View {
     this.camera.updateProjectionMatrix();
   }
 
+  /** WebGL renderer description for bench.json */
+  rendererInfo(): string {
+    const gl = this.renderer.getContext();
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    const gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    return `three.js r${THREE.REVISION} WebGL${this.renderer.capabilities.isWebGL2 ? "2" : "1"} (${gpu})`;
+  }
+
   /** Build the night's world (terrain, plants, animals, lanterns, charms). */
-  load(game: Game): void {
+  load(game: Game, opts: LoadOptions = { decor: true }): void {
     this.scene.remove(this.world);
     this.world.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -88,37 +140,39 @@ export class View {
     });
     this.world = new THREE.Group();
     this.scene.add(this.world);
-    for (const v of this.shades.values()) this.scene.remove(v.root);
-    for (const v of this.motes.values()) this.scene.remove(v);
     for (const v of this.drifters.values()) this.scene.remove(v.root);
-    this.shades.clear(); this.motes.clear(); this.drifters.clear();
+    this.drifters.clear();
+    this.land = null; this.vegetation = null; this.fauna = null;
 
     const map = game.map;
-    this.world.add(buildTerrain(map));
-    // trees are solid in the windowed game, so keep them off every gameplay spot
-    const avoid = [
-      ...game.lanterns.map((l) => ({ x: l.x, z: l.z, r: 3 })),
-      ...map.pads.map((p) => ({ x: p.x, z: p.z, r: 2 })),
-      ...map.charms.map((c) => ({ x: c.pos[0], z: c.pos[2], r: 2 })),
-      ...map.moteSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
-      ...map.shadeSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
-      { x: map.start[0], z: map.start[2], r: 4 },
-    ];
-    // creative: sandy hills, lake, river and waterfall ON the island (visual height only, see decor/landscape.ts)
-    this.land = new Landscape(map, avoid.filter((a) => a.r >= 2), this.quality); // lanterns, pads, charms, start stay flat
-    this.world.add(this.land.group);
-    avoid.push(...this.land.waterSpots());
-    this.vegetation = new Vegetation({ map, avoid, quality: this.quality, land: this.land });
-    // creative extra: Mây cannot walk through trunks (trunk + body radius); never set in headless
-    // ... and cannot walk through lantern poles (stone base r ~1.1 m; interact radius 2 m still reachable) or big rocks
+    this.world.add(buildTerrain(map, !opts.decor));
+    this.fogBase = map.scale ? 0.006 : 0.012;
+    if (opts.decor) {
+      // trees are solid in the windowed game, so keep them off every gameplay spot
+      const avoid = [
+        ...game.lanterns.map((l) => ({ x: l.x, z: l.z, r: 3 })),
+        ...map.pads.map((p) => ({ x: p.x, z: p.z, r: 2 })),
+        ...map.charms.map((c) => ({ x: c.pos[0], z: c.pos[2], r: 2 })),
+        ...map.moteSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
+        ...map.shadeSpawns.map(([x, , z]) => ({ x, z, r: 0.5 })),
+        { x: map.start[0], z: map.start[2], r: 4 },
+      ];
+      // creative: sandy hills, lake, river and waterfall ON the island (visual height only, see decor/landscape.ts)
+      this.land = new Landscape(map, avoid.filter((a) => a.r >= 2), this.quality); // lanterns, pads, charms, start stay flat
+      this.world.add(this.land.group);
+      avoid.push(...this.land.waterSpots());
+      this.vegetation = new Vegetation({ map, avoid, quality: this.quality, land: this.land });
+      this.fauna = new Fauna(this.vegetation.trees, map, this.land);
+      this.world.add(this.vegetation.group, this.fauna.group);
+    }
+    // creative extra (windowed game only, never in headless): Mây cannot walk through trees, big rocks and lantern poles
+    // (stone base r ~1.1 m; the interact radius of 2 m is still reachable)
     game.extraSolids = [
-      ...this.vegetation.trees.map((t) => ({ x: t.x, z: t.z, r: t.r + 0.35 })),
-      ...this.vegetation.rocks.map((r) => ({ x: r.x, z: r.z, r: r.r + 0.3 })),
+      ...(this.vegetation?.trees ?? []).map((t) => ({ x: t.x, z: t.z, r: t.r + 0.35 })),
+      ...(this.vegetation?.rocks ?? []).map((r) => ({ x: r.x, z: r.z, r: r.r + 0.3 })),
       ...game.lanterns.map((l) => ({ x: l.x, z: l.z, r: 1.0 })),
     ];
-    this.fogBase = map.scale ? 0.006 : 0.012;
-    this.fauna = new Fauna(this.vegetation.trees, map, this.land);
-    this.world.add(this.vegetation.group, this.fauna.group);
+    if (game.bench) game.extraSolids = [];
     this.lanterns = game.lanterns.map((l) => {
       const v = makeBigLantern();
       v.root.position.set(l.x, l.y, l.z);
@@ -134,17 +188,19 @@ export class View {
   }
 
   pulse(): void { this.pulseT = 0; }
+  /** short camera shake when Mây is hit (skipped with reduced motion) */
+  shake(): void { if (!this.reduceMotion) this.shakeT = 0.35; }
 
-  /** screen position of a world point (for the off-screen lantern arrow) */
+  /** screen position of a world point (for off-screen arrows) */
   project(x: number, y: number, z: number): { x: number; y: number; behind: boolean } {
     const v = new THREE.Vector3(x, y, z).project(this.camera);
     return { x: (v.x * 0.5 + 0.5) * innerWidth, y: (-v.y * 0.5 + 0.5) * innerHeight, behind: v.z > 1 };
   }
 
-  render(game: Game, camYawDeg: number, time: number, dt: number): void {
+  /** camOverride: fixed camera position looking at (0,0,0) (benchmark orbit) */
+  render(game: Game, camYawDeg: number, time: number, dt: number, camOverride?: [number, number, number]): void {
     const p = game.player;
-    const visible = game.playerActive;
-    this.may.root.visible = visible && !(p.invulnTicks > 0 && Math.floor(time * 12) % 2 === 0);
+    this.may.root.visible = game.playerActive && !(p.invulnTicks > 0 && Math.floor(time * 12) % 2 === 0);
     const hp = this.h(p.x, p.z); // Mây walks over the visual hills / wades in the lake
     this.may.root.position.set(p.x, p.y + hp, p.z);
     this.may.root.rotation.y = Math.atan2(p.faceX, p.faceZ);
@@ -157,16 +213,14 @@ export class View {
       const cost = l.everLit ? game.t.relight_cost : game.t.lantern_cost;
       const fill = l.lit ? 1 : l.deposited / cost;
       const fuel = l.fuelU / 60;
-      // fuel < 30: lamp and fuel bar blink slowly (1 Hz)
-      const low = l.lit && l.fuelU < game.lowFuelU;
+      const low = l.lit && l.fuelU < game.lowFuelU; // fuel < 30: lamp and fuel bar blink slowly (1 Hz)
       const blinkOff = low && Math.floor(time * 2) % 2 === 1;
       const mat = v.lamp.material as THREE.MeshStandardMaterial;
       mat.color.setHex(l.lit ? PALETTE.lanternLit : PALETTE.lanternOff);
       mat.emissiveIntensity = l.lit ? (blinkOff ? 0.3 : 1.6 + Math.sin(time * 3 + i) * 0.15) : fill * 0.8;
       v.core.visible = l.lit && !blinkOff;
       v.light.intensity = l.lit ? (blinkOff ? 40 : 140) * (0.4 + 0.6 * Math.min(1, fuel / 50)) : fill * 20;
-      // out: squashed 20% + torn paper (distinguishable without colour)
-      v.lamp.scale.y = l.lit ? 1 : 0.8;
+      v.lamp.scale.y = l.lit ? 1 : 0.8; // out: squashed 20% + torn paper (no colour needed)
       v.tear.visible = !l.lit;
       v.fuelBg.visible = l.lit && !blinkOff;
       v.fuelBar.scale.x = Math.max(0.001, fuel / game.t.fuel_max);
@@ -177,9 +231,9 @@ export class View {
     const k = lit / game.lanterns.length;
     this.hemi.intensity = 0.15 + 0.55 * k;
     (this.scene.fog as THREE.FogExp2).density = this.fogBase * (1 - k * 0.4);
-    // shadows follow Mây so big maps keep sharp shadows
-    this.moon.target.position.set(p.x, p.y, p.z);
-    this.moon.position.copy(this.env.moonDir).multiplyScalar(90).add(this.moon.target.position);
+    const focus = camOverride ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(p.x, p.y, p.z);
+    this.moon.target.position.copy(focus); // shadows follow the action
+    this.moon.position.copy(this.env.moonDir).multiplyScalar(90).add(focus);
 
     game.charms.forEach((c, i) => {
       const v = this.charms[i];
@@ -188,46 +242,53 @@ export class View {
       v.position.y = c.y + 1 + Math.sin(time * 2 + i) * 0.15;
     });
 
-    // shades
-    const seen = new Set<string>();
-    for (const s of game.shades) {
-      seen.add(s.id);
-      let v = this.shades.get(s.id);
-      if (!v) { v = makeShade(); this.shades.set(s.id, v); this.scene.add(v.root); }
+    // ---- shades (instanced)
+    const n = game.shades.length;
+    this.shadeBody.ensure(n); this.shadeRim.ensure(n); this.shadeEyes.ensure(n * 2);
+    this.rimMat.color.setHex(this.colorblind ? PALETTE_CB.shadeRim : PALETTE.shadeRim);
+    this.eyeMat.color.setHex(this.colorblind ? PALETTE_CB.shadeRim : 0xc9a7ff);
+    let rims = 0;
+    const o = this.tmp;
+    game.shades.forEach((s, i) => {
       const stunned = s.state === "stunned";
-      v.root.position.set(s.x, s.y + Math.max(0, this.h(s.x, s.z)) + Math.sin(time * 4 + s.x) * 0.12, s.z);
-      v.root.lookAt(p.x, s.y, p.z);
       const grow = s.state === "spawning" ? 1 - s.stateTicks / STD.shadeSpawningTicks : 1;
-      v.root.scale.setScalar(Math.max(0.05, grow) * (1 + Math.sin(time * 6 + s.z) * 0.06));
-      (v.body.material as THREE.MeshStandardMaterial).color.setHex(stunned ? PALETTE.shadeStunned : PALETTE.shadeBody);
-      v.rim.visible = !stunned;
-      const rimHex = this.colorblind ? PALETTE_CB.shadeRim : PALETTE.shadeRim;
-      (v.rim.material as THREE.MeshBasicMaterial).color.setHex(rimHex);
-      v.eyeMat.color.setHex(this.colorblind ? PALETTE_CB.shadeRim : 0xc9a7ff);
-      if (s.state === "drain") v.root.rotation.x = Math.sin(time * 10) * 0.1; // sucking wobble
-    }
-    for (const [id, v] of this.shades) if (!seen.has(id)) { this.scene.remove(v.root); this.shades.delete(id); }
+      o.position.set(s.x, s.y + Math.max(0, this.h(s.x, s.z)) + Math.sin(time * 4 + s.x) * 0.12, s.z);
+      o.rotation.set(s.state === "drain" ? Math.sin(time * 10) * 0.1 : 0, Math.atan2(p.x - s.x, p.z - s.z), 0);
+      o.scale.setScalar(Math.max(0.05, grow) * (1 + Math.sin(time * 6 + s.z) * 0.06));
+      o.updateMatrix();
+      this.shadeBody.mesh.setMatrixAt(i, o.matrix);
+      this.shadeBody.mesh.setColorAt(i, this.col.setHex(stunned ? PALETTE.shadeStunned : PALETTE.shadeBody));
+      if (!stunned) this.shadeRim.mesh.setMatrixAt(rims++, o.matrix);
+      for (const [j, sx] of [[0, -0.22], [1, 0.22]] as const) {
+        this.tmpM.makeTranslation(sx, 0.15, 0.62).premultiply(o.matrix);
+        this.shadeEyes.mesh.setMatrixAt(i * 2 + j, this.tmpM);
+      }
+    });
+    this.shadeBody.mesh.count = n; this.shadeRim.mesh.count = rims; this.shadeEyes.mesh.count = n * 2;
+    for (const pool of [this.shadeBody, this.shadeRim, this.shadeEyes]) pool.mesh.instanceMatrix.needsUpdate = true;
+    if (this.shadeBody.mesh.instanceColor) this.shadeBody.mesh.instanceColor.needsUpdate = true;
 
-    // motes (random + dropped; dropped ones blink when about to expire)
-    const seenM = new Set<string>();
-    for (const m of game.motes) {
-      seenM.add(m.id);
-      let v = this.motes.get(m.id);
-      if (!v) { v = makeMote(); this.motes.set(m.id, v); this.scene.add(v); }
-      v.position.set(m.x, m.y + Math.max(0, this.h(m.x, m.z)) + 0.8 + Math.sin(time * 2.5 + m.x * 3) * 0.2, m.z);
-      v.visible = !(m.ttl !== null && m.ttl < 120 && Math.floor(time * 8) % 2 === 0);
+    // ---- fireflies (instanced; dropped ones blink before they expire)
+    let m = 0;
+    this.moteCore.ensure(game.motes.length); this.moteHalo.ensure(game.motes.length);
+    for (const mt of game.motes) {
+      if (mt.ttl !== null && mt.ttl < 120 && Math.floor(time * 8) % 2 === 0) continue;
+      o.position.set(mt.x, mt.y + Math.max(0, this.h(mt.x, mt.z)) + 0.8 + Math.sin(time * 2.5 + mt.x * 3) * 0.2, mt.z);
+      o.rotation.set(0, 0, 0); o.scale.setScalar(1); o.updateMatrix();
+      this.moteCore.mesh.setMatrixAt(m, o.matrix); this.moteHalo.mesh.setMatrixAt(m, o.matrix);
+      m++;
     }
-    for (const [id, v] of this.motes) if (!seenM.has(id)) { this.scene.remove(v); this.motes.delete(id); }
+    this.moteCore.mesh.count = this.moteHalo.mesh.count = m;
+    this.moteCore.mesh.instanceMatrix.needsUpdate = this.moteHalo.mesh.instanceMatrix.needsUpdate = true;
 
-    // drifters: rippling ribbons
+    // ---- drifters: rippling ribbons (at most 2)
     const seenD = new Set<string>();
     for (const d of game.drifters) {
       seenD.add(d.id);
       let v = this.drifters.get(d.id);
       if (!v) { v = makeDrifter(); this.drifters.set(d.id, v); this.scene.add(v.root); }
       v.root.position.set(d.x, d.y + Math.max(0, this.h(d.x, d.z)), d.z);
-      const dir = d.state === "flee" ? Math.atan2(d.x - p.x, d.z - p.z) : Math.atan2(p.x - d.x, p.z - d.z);
-      v.root.rotation.y = dir;
+      v.root.rotation.y = d.state === "flee" ? Math.atan2(d.x - p.x, d.z - p.z) : Math.atan2(p.x - d.x, p.z - d.z);
       const pos = v.ribbon.geometry.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < pos.count; i++) {
         const z = v.base[i * 3 + 2];
@@ -264,13 +325,24 @@ export class View {
     this.vegetation?.update(time);
     this.fauna?.update(dt, time, [{ x: p.x, z: p.z, w: 1 }, ...game.shades.map((s) => ({ x: s.x, z: s.z, w: 1.5 }))]);
 
-    // third-person camera behind Mây, looking along (sin yaw, cos yaw)
-    const th = (camYawDeg * Math.PI) / 180;
-    const fx = Math.sin(th), fz = Math.cos(th);
-    const camY = Math.max(p.y + hp, -2);
-    const target = new THREE.Vector3(p.x - fx * 9, camY + 5.5, p.z - fz * 9);
-    this.camera.position.lerp(target, 1 - Math.exp(-dt * 8));
-    this.camera.lookAt(p.x + fx * 2, camY + 1.2, p.z + fz * 2);
+    if (camOverride) {
+      this.camera.position.set(...camOverride);
+      this.camera.lookAt(0, 0, 0);
+    } else {
+      // third-person camera behind Mây, looking along (sin yaw, cos yaw)
+      const th = (camYawDeg * Math.PI) / 180;
+      const fx = Math.sin(th), fz = Math.cos(th);
+      const camY = Math.max(p.y + hp, -2);
+      const target = new THREE.Vector3(p.x - fx * 9, camY + 5.5, p.z - fz * 9);
+      this.camera.position.lerp(target, 1 - Math.exp(-dt * 8));
+      this.camera.lookAt(p.x + fx * 2, camY + 1.2, p.z + fz * 2);
+      if (this.shakeT > 0 && !this.reduceMotion) {
+        this.shakeT = Math.max(0, this.shakeT - dt);
+        const a = this.shakeT * 0.9;
+        this.camera.position.x += (Math.random() - 0.5) * a;
+        this.camera.position.y += (Math.random() - 0.5) * a;
+      }
+    }
 
     this.renderer.render(this.scene, this.camera);
   }

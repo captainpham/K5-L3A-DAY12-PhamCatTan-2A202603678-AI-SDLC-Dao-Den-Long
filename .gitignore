@@ -6,3 +6,6 @@ dist/
 !.env.example
 .claude/settings.local.json
 .DS_Store
+release/
+bench.json
+soak.json

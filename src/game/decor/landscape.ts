@@ -80,45 +80,64 @@ export class Landscape {
       }
     }
 
-    // one lake per night (on the first island), fed by a river from a hill, overflowing to a waterfall at the edge
+    // one lake per night (on the first island), fed by a river from a hill, overflowing to a waterfall at the edge.
+    // Rivers are 10x the Phase-3 width (~18 m); if the island is too crowded for that, try 12 / 8 / 4 m.
     const [cx, cz, R] = islands[0];
-    for (let tries = 0; tries < 400; tries++) {
-      const a = rng() * Math.PI * 2, d = R * (0.25 + rng() * 0.45);
-      const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, r = 4 + rng() * 2;
-      if (this.freeRadius(x, z) < r + 2 || this.hills.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + r + 1)) continue;
-      // outflow: radial line from the lake to the island edge must stay clear of gameplay spots
-      const ox = (x - cx) / (d || 1), oz = (z - cz) / (d || 1);
-      const out: [number, number][] = [];
-      let ok = true;
-      for (let s = r * 0.6; ; s += 1) {
-        const px = x + ox * s + Math.sin(s * 0.35) * oz * 1.2, pz = z + oz * s - Math.sin(s * 0.35) * ox * 1.2;
-        const gp = map.ground(px, pz);
-        if (gp === null) break;
-        if (gp !== 0) { ok = false; break; } // never across a mountain or a tier
-        if (this.flatSpots.some((f) => Math.hypot(f.x - px, f.z - pz) < f.r + 2)) { ok = false; break; }
-        out.push([px, pz]);
-        if (s > R * 2) { ok = false; break; }
-      }
-      if (!ok || out.length < 4) continue;
-      this.lakes.push({ x, z, r, depth: 0.9, level: -0.35 });
-      this.rivers.push(out);
-      // inflow from the nearest hill
-      const hill = [...this.hills].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];
-      if (hill) {
-        const inflow: [number, number][] = [];
-        const L = Math.hypot(hill.x - x, hill.z - z);
-        for (let s = hill.r * 0.35; s <= L - r * 0.6; s += 0.8) {
-          const t = s / L, px = hill.x + (x - hill.x) * t, pz = hill.z + (z - hill.z) * t;
-          const wob = Math.sin(t * 9) * 0.9, nx = -(z - hill.z) / L, nz = (x - hill.x) / L;
-          inflow.push([px + nx * wob, pz + nz * wob]);
-        }
-        if (inflow.length > 2 && inflow.every(([px, pz]) => !this.flatSpots.some((f) => Math.hypot(f.x - px, f.z - pz) < f.r + 1.5))) this.rivers.push(inflow);
-      }
-      break;
+    for (const W of [18, 16, 14, 12, 10, 8, 6, 4]) {
+      if (this.placeLakeAndRivers(rng, cx, cz, R, W)) break;
     }
 
     this.buildGround();
     this.buildWater(quality);
+  }
+
+  /** half width of each river (same order as `rivers`) */
+  readonly riverHalf: number[] = [];
+
+  private placeLakeAndRivers(rng: () => number, cx: number, cz: number, R: number, W: number): boolean {
+    const map = this.map, half = W / 2;
+    const clear = (px: number, pz: number, extra: number) => !this.flatSpots.some((f) => Math.hypot(f.x - px, f.z - pz) < f.r + extra);
+    for (let tries = 0; tries < 500; tries++) {
+      const a = rng() * Math.PI * 2, d = R * (0.2 + rng() * 0.45);
+      const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, r = Math.max(4 + rng() * 2, W * 0.7);
+      if (this.freeRadius(x, z) < Math.min(r + 2, 11) || !clear(x, z, r + 1) || this.hills.some((h) => Math.hypot(h.x - x, h.z - z) < h.r + r + 1)) continue;
+      // outflow: from the lake to the island edge, the whole river width clear of gameplay spots, tiers and mountains
+      const ox = (x - cx) / (d || 1), oz = (z - cz) / (d || 1);
+      const out: [number, number][] = [];
+      let ok = true;
+      for (let s = r * 0.6; ; s += 1) {
+        const wob = Math.sin(s * 0.12) * W * 0.25;
+        const px = x + ox * s + wob * oz, pz = z + oz * s - wob * ox;
+        const gp = map.ground(px, pz);
+        if (gp === null) break;
+        if (gp !== 0 || !clear(px, pz, half + 1)) { ok = false; break; } // never across a mountain, a tier or a gameplay spot
+        for (const side of [-half, half]) { const g2 = map.ground(px + oz * side, pz - ox * side); if (g2 !== null && g2 !== 0) ok = false; }
+        if (!ok) break;
+        out.push([px, pz]);
+        if (s > R * 2.5) { ok = false; break; }
+      }
+      if (!ok || out.length < 4) continue;
+      this.lakes.push({ x, z, r, depth: Math.min(1.4, 0.9 + W * 0.03), level: -0.35 });
+      this.rivers.push(out);
+      this.riverHalf.push(half);
+      // inflow from the nearest hill (a bit narrower)
+      const hill = [...this.hills].sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];
+      if (hill) {
+        const inflow: [number, number][] = [];
+        const L = Math.hypot(hill.x - x, hill.z - z), ih = half * 0.7;
+        for (let s = hill.r * 0.35; s <= L - r * 0.6; s += 0.8) {
+          const t = s / L, px = hill.x + (x - hill.x) * t, pz = hill.z + (z - hill.z) * t;
+          const wob = Math.sin(t * 6) * Math.min(3, ih * 0.4), nx = -(z - hill.z) / L, nz = (x - hill.x) / L;
+          inflow.push([px + nx * wob, pz + nz * wob]);
+        }
+        if (inflow.length > 2 && inflow.every(([px, pz]) => clear(px, pz, ih + 1) && map.ground(px, pz) === 0)) {
+          this.rivers.push(inflow);
+          this.riverHalf.push(ih);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /** distance from (x,z) to the nearest place that must stay flat (gameplay spot, edge, tier, bridge) */
@@ -154,17 +173,20 @@ export class Landscape {
     return Math.max(0, m);
   }
 
-  private riverDist(x: number, z: number): number {
-    let best = 99;
-    for (const path of this.rivers) {
+  /** signed distance to the nearest river bank (negative = inside the river) and that river's half width */
+  private riverDist(x: number, z: number): { d: number; half: number } {
+    let best = 99, half = 1;
+    this.rivers.forEach((path, ri) => {
+      const hw = this.riverHalf[ri] ?? 0.7;
       for (let i = 0; i + 1 < path.length; i++) {
         const [ax, az] = path[i], [bx, bz] = path[i + 1];
         const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1;
         const t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / l2));
-        best = Math.min(best, Math.hypot(x - ax - vx * t, z - az - vz * t));
+        const d = Math.hypot(x - ax - vx * t, z - az - vz * t) - hw;
+        if (d < best) { best = d; half = hw; }
       }
-    }
-    return best;
+    });
+    return { d: best, half };
   }
 
   // ---- cached grid (built once in buildGround): height() and friends become cheap bilinear lookups
@@ -200,8 +222,8 @@ export class Landscape {
       const d = Math.hypot(x - lk.x, z - lk.z);
       if (d < lk.r + 1.5) h -= lk.depth * smooth(lk.r + 1.5, lk.r * 0.4, d);
     }
-    const rd = this.riverDist(x, z);
-    if (rd < 1.4) h -= 0.45 * (1 - rd / 1.4) ** 2;
+    const { d: rd, half } = this.riverDist(x, z); // wide river: channel deepens toward the middle, soft banks
+    if (rd < 1.5) h -= Math.min(1.2, 0.3 + half * 0.1) * smooth(1.5, -Math.min(half, 3), rd);
     return h * m;
   }
 
@@ -215,7 +237,7 @@ export class Landscape {
   }
 
   private isWaterRaw(x: number, z: number): boolean {
-    return this.lakes.some((l) => Math.hypot(x - l.x, z - l.z) < l.r + 0.3) || this.riverDist(x, z) < 1.1;
+    return this.lakes.some((l) => Math.hypot(x - l.x, z - l.z) < l.r + 0.3) || this.riverDist(x, z).d < -0.2;
   }
 
   /** sandy (hill tops / slopes) vs grassy ground, used by the vegetation for colour and placement */
@@ -306,7 +328,7 @@ export class Landscape {
     this.rivers.forEach((path, ri) => {
       const pts = path.map(([x, z]) => new THREE.Vector3(x, 0, z));
       const curve = new THREE.CatmullRomCurve3(pts);
-      const N = Math.max(20, path.length * 4), W = ri === 0 ? 1.8 : 1.3;
+      const N = Math.max(20, path.length * 4), W = 2 * (this.riverHalf[ri] ?? 0.7) + 0.6; // reaches just over the banks
       const pos: number[] = [], uv: number[] = [], idx: number[] = [];
       for (let i = 0; i <= N; i++) {
         const t = i / N, p = curve.getPoint(t), tg = curve.getTangent(t);
@@ -353,7 +375,7 @@ export class Landscape {
   /** trees should keep off the water and the river banks */
   waterSpots(): Spot[] {
     const s: Spot[] = this.lakes.map((l) => ({ x: l.x, z: l.z, r: l.r + 1 }));
-    for (const path of this.rivers) for (let i = 0; i < path.length; i += 2) s.push({ x: path[i][0], z: path[i][1], r: 1.6 });
+    for (const path of this.rivers) for (let i = 0; i < path.length; i += 2) s.push({ x: path[i][0], z: path[i][1], r: (this.riverHalf[this.rivers.indexOf(path)] ?? 0.7) + 1 });
     return s;
   }
 

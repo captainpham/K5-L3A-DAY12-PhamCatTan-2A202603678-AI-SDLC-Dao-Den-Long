@@ -151,6 +151,29 @@ Người chơi muốn đảo rộng hơn, map to gấp đôi, núi cao gấp 10,
 núi 25–45 m là `ground()` thật (đặt cách đèn, bục, bùa, điểm xuất phát; điểm sinh đom đóm/Bóng Mực có thể nằm trên sườn núi, Y = mặt núi).
 Bục nhảy `vh` x2 để quãng bay x2. Headless không import file này (test). Cột đèn (r 1 m), đá lớn, cây chặn Mây qua `extraSolids` (chỉ bản chơi).
 
+## Phase 4
+
+Ticket-04 "Bình minh", Test Contract **v1.3**. Giả định cho chỗ ticket chưa nói rõ:
+
+| Chỗ chưa rõ | Giả định |
+|---|---|
+| `<bench_cmd>`, `<soak_cmd>`, `<run_cmd>` | `node dist/bench.cjs`, `node --expose-gc dist/soak.cjs`, `node dist/serve.cjs` (đã khai trong `game.contract.json`) |
+| Cảnh bench: "rải đều trên đảo (seed 42)" | Đều theo diện tích trong bán kính 38 m (căn bậc hai của số ngẫu nhiên), id S1–S200 và M1–M100 |
+| Cảnh bench: Bóng Mực `wander` "theo luật bình thường" | Đúng luật Ticket-03: đi tới đèn yếu hoặc đèn tắt gần nhất (nên chúng tụ quanh L4, L5 chưa sáng); không chase vì Mây đứng yên và bench không gây sát thương |
+| Cảnh bench: ánh sáng và hiệu ứng "như lúc chơi thật" | Giữ ánh sáng, biển, sao, đổ bóng, đèn; **tắt** đồi, hồ, cây cỏ, động vật (phần sáng tạo) |
+| Khung đo | `dt` = hiệu thời gian giữa hai lần `requestAnimationFrame`; 3 giây đầu bỏ; p95 theo nearest-rank |
+| `load_ms` | Từ lúc tiến trình `bench` bắt đầu (gồm mở Chrome) tới khung hình đầu tiên của cảnh |
+| `peak_mem_mb` | `null` (bản web); thêm `peak_js_heap_mb` |
+| Soak: xác suất "mỗi tick" | Mỗi tick tung xúc xắc độc lập; hướng mới mỗi 30 tick; camYaw = 0 |
+| Soak: "mem_start sau khi tải xong Đêm đầu" | Sau khi tải Đêm 1 và một Đêm khởi động bỏ đi (JIT/heap), có `gc()`; xem README |
+| Bảng xếp hạng: `seed` | Seed của lượt chơi (campaign seed); `nights_won` = số Đêm đã thắng; `score` = tổng điểm các Đêm đã thắng |
+| Bảng xếp hạng: lưu ở đâu | `~/.dao-den-long/leaderboard.json` qua server cục bộ; không có server (`npm run dev`) thì `localStorage` |
+| Tên có dấu | Cho phép chữ cái Unicode (tiếng Việt), chuẩn hoá NFC; vẫn 3–12 ký tự |
+| Đổi phím | Esc là mặc định của Tạm dừng; mũi tên trái/phải xoay camera cố định, không đổi được |
+| "Phát hiện trùng phím" | Báo ngay trong Cài đặt (tô đỏ và dòng cảnh báo), vẫn cho lưu |
+| Mũi tên chỉ hướng Bóng Mực | Hiện 4 giây sau khi con đó xuất hiện, nếu nó ngoài màn hình |
+| Cỡ chữ 18 px | `html { font-size: 18px }`, mọi chữ UI dùng `rem` |
+
 ### Điều khiển -> input contract
 
 Camera nhìn theo hướng `(sin yaw, cos yaw)`. Với công thức xoay của contract, `W` = `z +1`, `S` = `z -1`, `A` = `x +1`, `D` = `x -1` (bên phải màn hình là `x -1`).

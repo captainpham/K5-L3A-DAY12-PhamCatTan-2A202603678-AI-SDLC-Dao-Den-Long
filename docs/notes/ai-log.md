@@ -57,3 +57,15 @@ Token Phase 2: cộng từ transcript khi gắn tag (xem cách tính ở Phase 1
 | Sáng tạo | Suối + thác, núi xa (chỉ hiển thị, không đổi bản đồ chuẩn) | — |
 
 Token Phase 3: cộng từ transcript khi gắn tag.
+
+## Phase 4 (Ticket-04, v1.3, Release)
+
+| Bước | Việc AI làm | Lỗi AI và cách phát hiện |
+|---|---|---|
+| Thiết kế | Bench bằng Puppeteer + trang `?bench=1` dùng chung `Game`; soak là mô phỏng thuần; server cục bộ lưu bảng xếp hạng; đổi phím trong `Controls` | — |
+| Hiệu năng | Bóng Mực và đom đóm vẽ bằng InstancedMesh để 200 con không tốn draw call | — |
+| Kiểm chứng | 141 test; bench và soak chạy thật; script Puppeteer lái UI để chụp bằng chứng | Ảnh chụp của bench thấy lớp phủ menu che cảnh (số đo sai chuẩn) -> ẩn lớp phủ. Soak lần đầu có tỉ lệ bộ nhớ 1.15–1.41 (có lúc > 1.2) do đo trên tiến trình nguội -> chạy 10/20/40 Đêm chứng minh không rò rỉ, thêm Đêm khởi động |
+| Test | `contract v1.2` -> v1.3 sửa kèm lý do; 1 test viết sai thứ tự cặp phím | Sửa test, không sửa game |
+| Harness | Thêm subagent `reviewer`, `AGENTS.md`; cập nhật CLAUDE.md | — |
+
+Token cả dự án (cộng từ transcript, xem `docs/notes/retro.md`): ~505 nghìn đầu ra, ~1,82 triệu ngữ cảnh mới, ~81,8 triệu đọc cache; khoảng 2,3 triệu token "mới".

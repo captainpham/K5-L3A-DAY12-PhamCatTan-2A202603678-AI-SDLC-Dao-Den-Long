@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603678-pham-cat-tan",
   "build_cmd": "npm ci && npm run build",
-  "run_cmd": "npm start",
+  "run_cmd": "node dist/serve.cjs",
   "headless_cmd": "node dist/headless.cjs",
+  "bench_cmd": "node dist/bench.cjs",
+  "soak_cmd": "node --expose-gc dist/soak.cjs",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,

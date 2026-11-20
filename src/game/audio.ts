@@ -1,18 +1,26 @@
-// Procedural audio with WebAudio (no sound files -> nothing to license): night music pad + effects.
+// Procedural audio with WebAudio (no sound files -> nothing to license): night music pad + effects. Also the settings store.
+import { DEFAULT_BINDINGS, type Bindings } from "./controls";
 export type Sfx = "pick" | "lit" | "pulse" | "hit" | "jump" | "dash" | "win" | "lose" | "shade" | "tick" | "wind" | "charm" | "steal" | "out" | "refuel";
 
-export interface Settings { volume: number; sensitivity: number; colorblind: boolean }
+export interface Settings {
+  volume: number; sensitivity: number; colorblind: boolean;
+  /** Ticket-04 accessibility */
+  reduceMotion: boolean; largeText: boolean; keys: Bindings;
+}
 const KEY = "ddl-settings";
 
 export function loadSettings(): Settings {
+  const def: Settings = { volume: 0.7, sensitivity: 1, colorblind: false, reduceMotion: false, largeText: false, keys: { ...DEFAULT_BINDINGS } };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    const keys = { ...DEFAULT_BINDINGS };
+    if (s.keys && typeof s.keys === "object") for (const a of Object.keys(keys) as (keyof Bindings)[]) if (typeof s.keys[a] === "string") keys[a] = s.keys[a];
     return {
-      volume: typeof s.volume === "number" ? s.volume : 0.7,
-      sensitivity: typeof s.sensitivity === "number" ? s.sensitivity : 1,
-      colorblind: s.colorblind === true,
+      volume: typeof s.volume === "number" ? s.volume : def.volume,
+      sensitivity: typeof s.sensitivity === "number" ? s.sensitivity : def.sensitivity,
+      colorblind: s.colorblind === true, reduceMotion: s.reduceMotion === true, largeText: s.largeText === true, keys,
     };
-  } catch { return { volume: 0.7, sensitivity: 1, colorblind: false }; }
+  } catch { return def; }
 }
 export function saveSettings(s: Settings): void {
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage may be blocked */ }
