@@ -1,10 +1,8 @@
 # Đảo Đèn Lồng
 
-**Tác giả:** Pham Cat Tan · **MSSV:** 2A202603678 · **Lớp:** K5-L3A · Bài lab Day 12: AI SDLC (VinUni AI20K)
+**Tác giả:** Phạm Cát Tân · **MSSV:** 2A202603678 · **Lớp:** K5-L3A · Bài lab Day 12: AI SDLC (VinUni AI20K)
 
 > **Video demo (.mp4):** [game.mp4 trong Release v1.0.0](https://github.com/captainpham/K5-L3A-DAY12-PhamCatTan-2A202603678-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/game.mp4) · [Trang Release v1.0.0](https://github.com/captainpham/K5-L3A-DAY12-PhamCatTan-2A202603678-AI-SDLC-Dao-Den-Long/releases/tag/v1.0.0) (có thêm bản chạy được `dao-den-long-v1.0.0.tar.gz`)
-
-**Tác giả:** Pham Cat Tan · **MSSV:** 2A202603678 · **Lớp:** K5-L3A · Bài lab Day 12: AI SDLC (VinUni AI20K)
 
 ![Menu](docs/proof/phase-4/menu.png)
 
