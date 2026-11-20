@@ -1,5 +1,7 @@
 # Credits
 
+Tác giả: Pham Cat Tan (MSSV 2A202603678, lớp K5-L3A).
+
 - Nhân vật, bối cảnh, tên gọi (Mây, Đảo Đèn Lồng, Bóng Mực, Đèn Lồng Lớn): bản gốc của lab Day 12 AI SDLC.
 - Mô hình 3D: tự dựng bằng hình khối cơ bản của Three.js trong code (`src/game/models.ts`, `src/game/decor/`): Mây, đèn, Bóng Mực, cây, hoa, đá, thỏ, sóc, hươu. Không dùng asset ngoài.
 - Mặt biển mây và hồ: addon `Water` của three.js (`three/examples/jsm/objects/Water.js`, MIT); texture gợn sóng sinh bằng code. Sông, thác: shader tự viết (`src/game/decor/landscape.ts`).
