@@ -47,7 +47,7 @@ Mọi phím đều **đổi được** ở *Cài đặt → Phím* (có cảnh b
 | `Shift` | Lướt |
 | `E` | Nạp đom đóm vào đèn / thắp lại / châm dầu |
 | `F` | Tỏa Sáng: làm choáng và đẩy lùi Bóng Mực, xua Gió Lạc (tốn 3 đom đóm) |
-| `Esc` | Tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu) |
+| `Esc` hoặc nút **← Quay lại** (góc dưới trái) | Tạm dừng (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu); ở Cài đặt, Bảng xếp hạng, màn giới thiệu thì quay lại màn trước |
 
 ## Luật và cách tính điểm
 

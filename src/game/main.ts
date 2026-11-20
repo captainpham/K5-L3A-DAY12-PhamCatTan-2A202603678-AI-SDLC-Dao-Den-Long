@@ -135,7 +135,8 @@ function runGame(): void {
     $("hudroot").classList.add("hidden");
     card(`<h2>Đêm ${n}</h2><h1>${mapFor(n).name}</h1><p class="quote"><b>Ông Đăng:</b> “${LINES[n]}”</p>
       <p>Giữ ít nhất <b>${game.litNeeded}/${game.lanterns.length}</b> đèn sáng lúc bình minh.</p>
-      <button id="b-go">Vào đêm</button>`, { "b-go": startNight });
+      <button id="b-go">Vào đêm</button><button class="ghost" id="b-back">← Quay lại</button>`, { "b-go": startNight, "b-back": showMenu });
+    backAction = showMenu;
   }
 
   function startNight(): void {
@@ -147,10 +148,15 @@ function runGame(): void {
     lastCountdown = -1;
   }
 
+  /** where "← Quay lại" / Esc goes from the current menu screen (set by each screen) */
+  let backAction: (() => void) | null = null;
   function togglePause(): void {
     if (screen === "play") { pendingPause = true; showPauseMenu(); } // the simulation pauses through the contract's pause input
     else if (screen === "pause") resume();
+    else if ((screen === "settings" || screen === "board" || screen === "intro") && backAction) backAction();
   }
+  // the in-game back button opens the pause menu (Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu)
+  $("btn-back").addEventListener("click", () => { audio.start(); if (screen === "play") togglePause(); });
   function showPauseMenu(): void {
     screen = "pause";
     card(`<h1>Tạm dừng</h1><button id="b-cont">Tiếp tục</button><button class="ghost" id="b-retry">Chơi lại Đêm</button>
@@ -177,11 +183,12 @@ function runGame(): void {
       <div class="keys">${ACTIONS.map((a) => `<span>${a.label}</span><button class="ghost${dupSet.has(a.id) ? " dup" : ""}" id="kb-${a.id}">${keyName(settings.keys[a.id])}</button>`).join("")}</div>
       ${dups.length ? `<p class="warn">⚠ Trùng phím: ${dups.map(([x, y]) => `${label(x)} và ${label(y)} (${keyName(settings.keys[x])})`).join("; ")}</p>` : ""}
       <p id="kb-msg"></p>
-      <button class="ghost" id="b-keyreset">Khôi phục mặc định</button><button id="b-back">Xong</button>`,
+      <button class="ghost" id="b-keyreset">Khôi phục mặc định</button><button id="b-back">← Quay lại</button>`,
     {
       "b-back": () => (back === "pause" ? showPauseMenu() : showMenu()),
       "b-keyreset": () => { settings.keys = { ...DEFAULT_BINDINGS }; controls.bindings = { ...settings.keys }; save(); showSettings(back); },
     });
+    backAction = () => (back === "pause" ? showPauseMenu() : showMenu());
     const bindInput = (id: string, ev: string, fn: (el: HTMLInputElement) => void) => $(id).addEventListener(ev, (e) => fn(e.target as HTMLInputElement));
     bindInput("s-vol", "input", (el) => { settings.volume = Number(el.value); $("v-vol").textContent = String(Math.round(settings.volume * 100)); audio.setVolume(settings.volume); save(); });
     bindInput("s-sen", "input", (el) => { settings.sensitivity = Number(el.value); $("v-sen").textContent = settings.sensitivity.toFixed(2); controls.sensitivity = settings.sensitivity; save(); });
@@ -208,7 +215,8 @@ function runGame(): void {
     const rows = list.map((e, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td><b>${e.score}</b></td><td>${e.nights_won}/3</td><td>${e.achieved_at.slice(0, 16).replace("T", " ")}</td></tr>`).join("");
     card(`<h1>🏆 Bảng xếp hạng</h1>
       ${list.length ? `<table><tr><th>#</th><th>Tên</th><th>Điểm</th><th>Đêm</th><th>Lúc</th></tr>${rows}</table>` : "<p>Chưa có ai. Hãy là người đầu tiên!</p>"}
-      <button id="b-menu">Về menu</button>`, { "b-menu": after ?? showMenu });
+      <button id="b-menu">← Quay lại</button>`, { "b-menu": after ?? showMenu });
+    backAction = after ?? showMenu;
   }
 
   function showNameEntry(then: () => void): void {
