@@ -68,6 +68,11 @@ Mọi phím đều **đổi được** ở *Cài đặt → Phím* (có cảnh b
 
 Tổng điểm game = tổng điểm các Đêm đã thắng. Số liệu: [game.contract.json](game.contract.json) (v1.3) và `STD` trong [src/sim/tuning.ts](src/sim/tuning.ts).
 
+## Quay video demo ngay trong game
+
+Nút **⏺ Quay màn hình** (góc dưới trái, ở mọi màn) quay cả trang game kèm HUD và âm thanh. Bấm lần nữa (**⏹ Dừng quay**) thì file `dao-den-long-demo-<ngày-giờ>.mp4` tự tải về thư mục Tải xuống. Video tự dừng ở **4:55** để luôn dưới 5 phút.
+Lần đầu Chrome hỏi chia sẻ màn hình: chọn **Tab này** (bật "Chia sẻ âm thanh của tab" để có tiếng). Chrome ≥ 126 xuất `.mp4`; trình duyệt cũ hơn xuất `.webm`. Muốn cho thấy terminal (`npm test`, `npm run bench`) trong video thì chọn **Toàn màn hình** thay vì **Tab này**.
+
 ## Bảng xếp hạng
 
 Sau màn Bình Minh hoặc khi thua, nhập tên (3–12 ký tự: chữ có dấu, số hoặc `_`) để lưu điểm. Giữ top 10 (điểm giảm dần; bằng điểm thì ai đạt trước đứng trên).

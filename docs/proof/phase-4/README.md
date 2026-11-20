@@ -25,5 +25,6 @@ Máy đo: Windows 11, AMD Ryzen 9 5900HS + Radeon Graphics (iGPU), 15 GB RAM, No
 | 5. GitHub Release v1.0.0 có bản chạy được | `npm run release` → `release/dao-den-long-v1.0.0.tar.gz` (web tĩnh + server + headless) | file local | **CHƯA ĐẠT**: Release phải tạo trên GitHub (máy chưa có `gh`) |
 | 6. Contract v1.3: `contract_version`, `bench_cmd`, `soak_cmd`; v1.0–v1.2 giữ nguyên | `tests/cli.test.ts`, `tests/release.test.ts`; 21 scenario headless chạy 2 lần | `RESULTS.md` | ĐẠT |
 | 7. Retro 1–2 trang | `docs/notes/retro.md` | file | ĐẠT |
-| 7. Video demo `.mp4` < 5 phút | cần người quay | — | **CHƯA ĐẠT**: chưa quay |
+| 7. Công cụ quay video: nút quay màn hình trong game, tự dừng 4:55, xuất `.mp4` | test logic (`recorder`) + quay thật 4,4 s trong Chrome, file có đầu `ftyp` hợp lệ | `record-button.png` | ĐẠT |
+| 7. Video demo `.mp4` < 5 phút | cần người quay (dùng nút trên) | — | **CHƯA ĐẠT**: chưa quay |
 | Regression Phase 1–3 | 141 test + `p1-*`, `p2-*`, `p3-*` | `RESULTS.md` | ĐẠT |

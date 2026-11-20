@@ -5,6 +5,7 @@
 - **Benchmark:** `node dist/bench.cjs --seed 42 --duration 30 --out bench.json`, cảnh chuẩn 200 Bóng Mực + 100 đom đóm, cửa sổ Chrome 1280×720, vsync tắt (`src/tools/bench.ts`, `src/sim/bench.ts`). Bóng Mực và đom đóm vẽ bằng InstancedMesh.
 - **Soak:** `node --expose-gc dist/soak.cjs --seed 7 --nights 10 --out soak.json` (`src/tools/soak.ts`).
 - **Bảng xếp hạng cục bộ:** nhập tên sau Bình Minh hoặc khi thua, top 10, lưu trên đĩa, màn hình ở menu, `--export-leaderboard`.
+- **Nút ⏺ Quay màn hình** trong game (`src/game/recorder.ts`): quay trang game + âm thanh, tự dừng ở 4:55, tải về `.mp4`.
 - **Nút ← Quay lại** trong game (mở menu tạm dừng) và ở Cài đặt, Bảng xếp hạng, màn giới thiệu Đêm; Esc cũng quay lại.
 - **Dễ tiếp cận:** đổi phím (báo trùng, khôi phục mặc định, được lưu), phụ đề + mũi tên chỉ hướng, giảm chuyển động, chữ ≥ 18 px và chữ lớn ×1.25.
 - **Đóng gói:** `npm start` chạy server cục bộ (`dist/serve.cjs`); `npm run release` đóng gói `dao-den-long-v1.0.0.tar.gz` (web tĩnh + server + headless); GitHub Release v1.0.0.

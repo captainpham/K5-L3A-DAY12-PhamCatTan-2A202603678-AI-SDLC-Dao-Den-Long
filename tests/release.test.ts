@@ -9,6 +9,7 @@ import { BENCH, benchCamera, benchStats, makeBenchGame } from "../src/sim/bench"
 import { MAX_ENTRIES, addEntry, isoWithOffset, toEntry, validName, type LeaderEntry } from "../src/sim/leaderboard";
 import { DEFAULT_BINDINGS, conflicts } from "../src/game/controls";
 import { soak } from "../src/tools/soak";
+import { MAX_SECONDS, clock, pickMime, recordingName } from "../src/game/recorder";
 
 const entry = (name: string, score: number, at: string): LeaderEntry => ({ name, score, nights_won: 1, achieved_at: at, seed: 1 });
 
@@ -121,6 +122,25 @@ describe("soak", () => {
 
   it("is deterministic (same seed -> same results)", () => {
     expect(soak(7, 4).results).toEqual(soak(7, 4).results);
+  });
+});
+
+describe("screen recorder helpers", () => {
+  it("prefers mp4 (the ticket asks for .mp4), falls back to webm, null when nothing is supported", () => {
+    expect(pickMime(() => true)).toMatch(/^video\/mp4/);
+    expect(pickMime((m) => m.startsWith("video/webm"))).toBe("video/webm;codecs=vp9,opus");
+    expect(pickMime(() => false)).toBeNull();
+  });
+
+  it("file name is timestamped with the right extension; clock formats mm:ss", () => {
+    const d = new Date(2026, 10, 20, 7, 5, 9);
+    expect(recordingName(d, "video/mp4;codecs=avc1")).toBe("dao-den-long-demo-20261120-070509.mp4");
+    expect(recordingName(d, "video/webm")).toBe("dao-den-long-demo-20261120-070509.webm");
+    expect([clock(0), clock(83.9), clock(295), clock(-5)]).toEqual(["00:00", "01:23", "04:55", "00:00"]);
+  });
+
+  it("auto-stop limit keeps the demo video under 5 minutes", () => {
+    expect(MAX_SECONDS).toBeLessThan(300);
   });
 });
 

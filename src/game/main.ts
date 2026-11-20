@@ -10,6 +10,7 @@ import { isoWithOffset, validName, type LeaderEntry } from "../sim/leaderboard";
 import { Audio, loadSettings, saveSettings } from "./audio";
 import { ACTIONS, Controls, DEFAULT_BINDINGS, conflicts, keyName, type Action } from "./controls";
 import { loadBoard, saveEntry } from "./leaderboard-client";
+import { ScreenRecorder, clock } from "./recorder";
 import { View } from "./view";
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -147,6 +148,23 @@ function runGame(): void {
     acc = 0;
     lastCountdown = -1;
   }
+
+  // ---------------------------------------------------------------- screen recording button (demo video)
+  const recBtn = $("btn-rec") as HTMLButtonElement;
+  const recorder = new ScreenRecorder();
+  if (ScreenRecorder.supported()) recBtn.classList.remove("hidden");
+  recorder.onState = (on) => { recBtn.classList.toggle("on", on); recBtn.textContent = on ? "⏹ Dừng quay 00:00" : "⏺ Quay màn hình"; };
+  recorder.onTick = (s) => { recBtn.textContent = `⏹ Dừng quay ${clock(s)}`; };
+  recorder.onError = (msg) => caption(msg, true, 5000);
+  recorder.onSaved = (s) => {
+    caption(`Đã lưu ${s.name} (${(s.size / 2 ** 20).toFixed(1)} MB, ${clock(s.seconds)}) vào thư mục Tải xuống`, false, 7000);
+    if (params.get("debug") === "1") Object.assign(window, { __lastRecording: s });
+  };
+  recBtn.addEventListener("click", () => {
+    audio.start();
+    if (recorder.recording) recorder.stop(); else void recorder.start();
+    recBtn.blur(); // so Space / Enter in the game never toggle the recording
+  });
 
   /** where "← Quay lại" / Esc goes from the current menu screen (set by each screen) */
   let backAction: (() => void) | null = null;

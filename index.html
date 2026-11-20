@@ -45,6 +45,11 @@
     #btn-back { position: fixed; left: 16px; bottom: 2.4rem; font-size: 1rem; padding: 6px 14px; border-radius: 10px; cursor: pointer;
       background: #0e1430cc; color: var(--text); border: 1px solid #3a4580; }
     #btn-back:hover, #btn-back:focus-visible { border-color: var(--lantern); outline: none; }
+    #btn-rec { position: fixed; z-index: 10; left: 16px; bottom: 4.9rem; font-size: 1rem; padding: 6px 14px; border-radius: 10px; cursor: pointer;
+      background: #0e1430cc; color: var(--text); border: 1px solid #3a4580; }
+    #btn-rec.on { background: #8a1c24; border-color: var(--danger); animation: blink 1.2s steps(2) infinite; }
+    body.calm #btn-rec.on { animation: none; }
+    #btn-rec:hover, #btn-rec:focus-visible { border-color: var(--lantern); outline: none; }
     #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s; }
     #overlay { position: fixed; inset: 0; display: grid; place-items: center; background: #0e1430b8; overflow-y: auto; }
     #overlay.hidden { display: none; }
@@ -71,6 +76,8 @@
 </head>
 <body>
   <div id="app"></div>
+  <button id="btn-rec" type="button" class="hidden">⏺ Quay màn hình</button>
+  <div id="captions" class="hud"></div>
   <div id="flash"></div>
   <div id="hudroot" class="hidden">
     <div id="flames" class="hud"></div>
@@ -78,7 +85,6 @@
     <div id="clock" class="hud"></div>
     <div id="topright" class="hud"></div>
     <div id="wind" class="hud">🍃 Gió sắp nổi…</div>
-    <div id="captions" class="hud"></div>
     <div id="bar" class="hud"></div>
     <div id="cds" class="hud">
       <div class="cd" id="cd-dash"><div class="ring" id="k-dash">⇧</div>Lướt</div>
