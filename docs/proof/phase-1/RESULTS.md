@@ -2,9 +2,9 @@
 
 > File này do `npm run proof` sinh ra, không sửa tay. Mỗi scenario chạy **2 lần** bằng CLI đã build và so sánh byte-by-byte (tính tất định).
 
-- Commit: `9818fc1` (working tree có thay đổi chưa commit)
+- Commit: `f80f38b`
 - Node: v22.22.3 · win32/x64
-- Thời điểm: 2026-11-20T08:29:20.790Z
+- Thời điểm: 2026-11-20T08:29:54.404Z
 
 | Scenario | Yêu cầu kiểm chứng | Kết quả cuối | Đánh giá |
 |---|---|---|---|
